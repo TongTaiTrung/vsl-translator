@@ -9,6 +9,7 @@ RULES
 5. Handle word order flexibly to maintain semantic coherence.
 
 khochiu=khó chịu
+tambiet=tạm biệt
 
 OUTPUT CONSTRAINTS
 - Output exactly one normalized Vietnamese sentence.
