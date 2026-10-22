@@ -12,7 +12,6 @@ POSE_L_SHOULDER = 11
 POSE_R_SHOULDER = 12
 RH_INDEX_TIP = 8
 
-
 def main():
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
