@@ -60,9 +60,9 @@ MODEL_COMPLEXITY = 2            # 0/1/2: 2 = pose chính xác nhất (đổi l�
 SMOOTH_LANDMARKS = True         # lọc jitter liên-frame → tọa độ ổn định hơn
 
 # ── Features ─────────────────────────────────────────────────────────────────
-# Canonical-skeleton retargeted keypoints: 188-dim body vector, no motion
+# Canonical-skeleton retargeted keypoints: 356-dim body vector, no motion
 # expansion (motion channels removed — GRU learns temporal dynamics itself).
-# pose 6×(x,y,vis)=18 + 2 hands 21×(x,y)=84 + arm_depths 2 + face-offsets 84.
+# pose 6×(x,y,vis)=18 + 2 hands 21×(x,y)=84 + arm_depths 2 + shoulder-offsets 252.
 # See landmarks.extract().
 HAND_DROPOUT_PROB = 0.5    # augmentation: ngẫu nhiên zero 1 bên tay → model không
                            # học shortcut "tay nào hiện/tay nào mất" mà phải học

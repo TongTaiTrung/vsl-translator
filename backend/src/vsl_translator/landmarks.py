@@ -58,12 +58,13 @@ def draw_landmarks(image, results):
 
 
 def draw_landmarks_new(image, results):
-    """Draw pose + both hands, shoulder spokes, and hand→face-center spokes.
+    """Draw pose + both hands, shoulder spokes, and raised-shoulder spokes.
 
     Matches the canonical feature set used by extract(): retargeted arm pose
     joints only, no face, no torso, no z-axis. Shoulder spokes visualize the
-    shoulder anchor; face spokes visualize the raw hand→face-center vectors
-    behind the face-offset feature blocks.
+    shoulder anchor; raised-shoulder spokes visualize the raw hand→anchor
+    vectors behind the shoulder-offset feature blocks (two raised shoulders
+    + their midpoint).
     """
     # Draw pose connections
     mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS,
@@ -79,8 +80,9 @@ def draw_landmarks_new(image, results):
                              mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2))
     # Spokes from each hand landmark to the shoulder midpoint
     draw_shoulder_spokes(image, results)
-    # Spokes from each hand landmark to the face center (face-offset features)
-    draw_face_spokes(image, results)
+    # Spokes from each hand landmark to the raised-shoulder anchors
+    # (shoulder-offset features)
+    draw_landmarks_test(image, results)
     return image
 
 L_SHOULDER = 11
@@ -194,6 +196,45 @@ def draw_shoulder_spokes(image, results, color=(0, 255, 255), thickness=1):
     if scale is not None:
         cv2.putText(image, f"shoulder_w: {scale:.3f}", (20, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2, cv2.LINE_AA)
+    return image
+
+
+def draw_landmarks_test(image, results, color=(0, 255, 0), thickness=1):
+    """Test overlay: hand landmarks -> raised shoulder points + shoulder midpoint.
+
+    - Lấy hai vai (pose 11, 12), giữ nguyên x, kéo y lên ngang với mặt
+      (y = face center y từ _get_face_center).
+    - Nối mỗi landmark tay tới cả hai điểm vai đã nâng + tới trung điểm
+      hai vai. Không nối tới giữa mặt nữa.
+    - Vai/face thiếu → không vẽ gì.
+    """
+    import config as _cfg
+    vis_thresh = getattr(_cfg, 'SHOULDER_VIS_THRESHOLD', 0.5)
+    ls, rs = _get_shoulders(results)
+    if ls is None or rs is None:
+        return image
+    fc = _get_face_center(results, vis_thresh)
+    if fc is None:
+        return image
+    h, w = image.shape[:2]
+    # Hai điểm vai kéo lên ngang mặt: giữ x vai, y = y mặt.
+    p_ls_raised = (int(float(ls.x) * w), int(float(fc[1]) * h))
+    p_rs_raised = (int(float(rs.x) * w), int(float(fc[1]) * h))
+    mid = shoulder_midpoint(results)
+    p_mid = (int(mid[0] * w), int(mid[1] * h)) if mid is not None else None
+    for hand_lm in (results.left_hand_landmarks, results.right_hand_landmarks):
+        if hand_lm is None:
+            continue
+        for res in hand_lm.landmark:
+            p_hand = (int(res.x * w), int(res.y * h))
+            cv2.line(image, p_hand, p_ls_raised, color, thickness)
+            cv2.line(image, p_hand, p_rs_raised, color, thickness)
+            if p_mid is not None:
+                cv2.line(image, p_hand, p_mid, color, thickness)
+    cv2.circle(image, p_ls_raised, 5, color, -1)
+    cv2.circle(image, p_rs_raised, 5, color, -1)
+    if p_mid is not None:
+        cv2.circle(image, p_mid, 5, (255, 0, 0), -1)
     return image
 
 
@@ -367,11 +408,32 @@ def _get_face_center(results, vis_thresh):
     return None
 
 
+def _get_raised_shoulders(results, vis_thresh):
+    """Raised shoulder anchors in normalized (x, y): (ls_raised, rs_raised, mid).
+
+    Keeps each shoulder's x, lifts y to the face-center y from
+    _get_face_center (same anchor draw_landmarks_test visualizes).
+    Returns (None, None, None) if shoulders or face center are missing.
+    """
+    ls, rs = _get_shoulders(results)
+    if ls is None or rs is None:
+        return None, None, None
+    fc = _get_face_center(results, vis_thresh)
+    if fc is None:
+        return None, None, None
+    ls_r = (float(ls.x), float(fc[1]))
+    rs_r = (float(rs.x), float(fc[1]))
+    mid = ((ls_r[0] + rs_r[0]) / 2.0, (ls_r[1] + rs_r[1]) / 2.0)
+    return ls_r, rs_r, mid
+
+
 def _face_offsets(hand_lm, face_center, palm_size):
     """Per-point hand→face-center offsets in canonical palm units.
 
     offset_i = (pts_i - face_center) / palm_size * STD_PALM, flattened to 42.
     Missing hand, missing face center, or degenerate palm → zeros(42).
+
+    Legacy: kept for data migration / tests; extract() no longer uses it.
     """
     if hand_lm is None or face_center is None or palm_size is None:
         return np.zeros(FACE_REF_DIM)
@@ -380,6 +442,27 @@ def _face_offsets(hand_lm, face_center, palm_size):
         return np.zeros(FACE_REF_DIM)
     fc = np.array(face_center, dtype=np.float64)
     return ((pts - fc) / palm_size * STD_PALM).flatten()
+
+
+def _shoulder_offsets(hand_lm, anchors, palm_size):
+    """Per-point hand→anchor offsets for 3 raised-shoulder anchors.
+
+    anchors = (ls_raised, rs_raised, mid); per anchor computes
+    (pts - anchor) / palm_size * STD_PALM flattened to 42, concatenated
+    in anchor order → 126. Missing hand/anchors/degenerate palm → zeros(126).
+    """
+    if hand_lm is None or anchors is None or palm_size is None:
+        return np.zeros(SH_OFF_REF_DIM)
+    if any(a is None for a in anchors):
+        return np.zeros(SH_OFF_REF_DIM)
+    pts = np.array([(res.x, res.y) for res in hand_lm.landmark], dtype=np.float64)
+    if pts.shape != (21, 2) or not np.all(np.isfinite(pts)):
+        return np.zeros(SH_OFF_REF_DIM)
+    blocks = []
+    for a in anchors:
+        av = np.array(a, dtype=np.float64)
+        blocks.append(((pts - av) / palm_size * STD_PALM).flatten())
+    return np.concatenate(blocks)
 
 def _compute_arm_depth_ratio(shoulder, elbow, wrist, frame_shape=None,
                                neutral_len=None, dz=0.0, z_gain=None):
@@ -508,11 +591,11 @@ def feed_calibrator(results, frame_shape, calibrator, vis_thresh=None):
     return tuple(out)
 
 def extract(results, frame_shape=None, neutral_lens=None):
-    """Canonical-skeleton retargeted keypoints as a 1-D array (188 values).
+    """Canonical-skeleton retargeted keypoints as a 1-D array (356 values).
 
     Layout: pose 6×(x,y,visibility)=18 [0:18] | lh 21×(x,y)=42 [18:60]
-    | rh 42 [60:102] | arm_depths 2 [102:104] | face_off_lh 42 [104:146]
-    | face_off_rh 42 [146:188].
+    | rh 42 [60:102] | arm_depths 2 [102:104] | sh_off_lh 126 [104:230]
+    | sh_off_rh 126 [230:356].
     Pose in per-side blocks: left [0:9] = shoulder (11),
     elbow (13), wrist (15); right [9:18] = shoulder (12), elbow (14),
     wrist (16); face and torso/lower body dropped, z dropped from pose slots
@@ -530,10 +613,10 @@ def extract(results, frame_shape=None, neutral_lens=None):
 
     Fallbacks (per-side): shoulders missing or visibility < threshold →
     whole frame zeros (Masking skips). Elbow/wrist missing or untrusted on
-    one side → that side's 2 pose joints + its 42 hand slots + its 42
-    face-offset slots are zeros, the other side is kept. Missing hand,
-    degenerate palm, or missing face center → that side's 42 face-offset
-    slots are zeros, frame otherwise intact.
+    one side → that side's 2 pose joints + its 42 hand slots + its 126
+    shoulder-offset slots are zeros, the other side is kept. Missing hand,
+    degenerate palm, or missing raised-shoulder anchors → that side's 126
+    shoulder-offset slots are zeros, frame otherwise intact.
     """
     import config as _cfg
     vis_thresh = getattr(_cfg, 'SHOULDER_VIS_THRESHOLD', 0.5)
@@ -551,13 +634,13 @@ def extract(results, frame_shape=None, neutral_lens=None):
     pose_out = np.zeros(POSE_DIM)
     lh = np.zeros(HAND_DIM)
     rh = np.zeros(HAND_DIM)
-    face_lh = np.zeros(FACE_REF_DIM)
-    face_rh = np.zeros(FACE_REF_DIM)
+    sh_lh = np.zeros(SH_OFF_REF_DIM)
+    sh_rh = np.zeros(SH_OFF_REF_DIM)
 
     # 2 dimensions for arm depth
     arm_depths = np.ones(2,dtype=np.float64)
 
-    face_center = _get_face_center(results, vis_thresh)
+    anchors = _get_raised_shoulders(results, vis_thresh)
 
     sides = [
         (ls, L_ELBOW, L_WRIST, results.left_hand_landmarks, 0, 'lh'),
@@ -588,33 +671,35 @@ def extract(results, frame_shape=None, neutral_lens=None):
         pose_out[base + 3:base + 6] = [elbow_c[0], elbow_c[1], el[2]]
         pose_out[base + 6:base + 9] = [wrist_c[0], wrist_c[1], wr[2]]
         hand = _process_hand(hand_lm)
-        face_off = _face_offsets(hand_lm, face_center, _palm_size(hand_lm))
+        sh_off = _shoulder_offsets(hand_lm, anchors, _palm_size(hand_lm))
         if side == 0:
             lh = hand
-            face_lh = face_off
+            sh_lh = sh_off
         else:
             rh = hand
-            face_rh = face_off
-    return np.concatenate([pose_out, lh, rh, arm_depths, face_lh, face_rh])
+            sh_rh = sh_off
+    return np.concatenate([pose_out, lh, rh, arm_depths, sh_lh, sh_rh])
 
 
 
 # ── Feature selection ────────────────────────────────────────────────────────
-# Layout of the 188-dim vector: pose [0:18] | lh [18:60] | rh [60:102] | arm_depths [102:104]
-#   | face_off_lh [104:146] | face_off_rh [146:188]
+# Layout of the 356-dim vector: pose [0:18] | lh [18:60] | rh [60:102] | arm_depths [102:104]
+#   | sh_off_lh [104:230] | sh_off_rh [230:356]
 # Pose keeps 6 canonical joints only: L/R shoulder, L/R elbow, L/R wrist.
 POSE_DIM = 6 * 3
 FACE_DIM = 0  # face landmarks are no longer extracted
 HAND_DIM = 21 * 2
 ARM_DEPTH_DIM = 2   # left/right arm foreshortening depth ratio
-FACE_REF_DIM = 21 * 2  # per-hand hand→face-center offsets (x, y per point)
-FACE_OFF_DIM = FACE_REF_DIM * 2  # both hands
+FACE_REF_DIM = 21 * 2  # legacy per-hand hand→face-center offsets (migration/tests)
+FACE_OFF_DIM = FACE_REF_DIM * 2  # legacy both-hands face offsets
+SH_OFF_REF_DIM = 21 * 2 * 3  # per-hand offsets to 3 raised-shoulder anchors (x, y per point)
+SH_OFF_DIM = SH_OFF_REF_DIM * 2  # both hands
 FULL_DIM = 1662  # legacy absolute-coordinate format (pre-conversion data)
-BODY_ONLY_DIM = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM + FACE_OFF_DIM  # 188
+BODY_ONLY_DIM = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM + SH_OFF_DIM  # 356
 
 
 def select_features(vec):
-    """Deprecated no-op: extract() already returns the 188-dim feature vector."""
+    """Deprecated no-op: extract() already returns the 356-dim feature vector."""
     return vec
 
 

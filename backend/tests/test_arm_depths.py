@@ -1,4 +1,4 @@
-"""Unit tests for the 188-dimensional feature vector layout and arm-depth propagation."""
+"""Unit tests for the 356-dimensional feature vector layout and arm-depth propagation."""
 
 import sys
 import os
@@ -16,22 +16,22 @@ from vsl_translator.model import build_model
 class TestArmDepths(unittest.TestCase):
     def test_dimensions_constant(self):
         self.assertEqual(lm.ARM_DEPTH_DIM, 2)
-        self.assertEqual(lm.BODY_ONLY_DIM, 188)
-        self.assertEqual(lm.n_features(), 188)
+        self.assertEqual(lm.BODY_ONLY_DIM, 356)
+        self.assertEqual(lm.n_features(), 356)
 
     def test_model_input_dimension(self):
         model = build_model(n_actions=4, sequence_len=24)
-        self.assertEqual(model.input_shape, (None, 24, 188))
+        self.assertEqual(model.input_shape, (None, 24, 356))
 
     def test_coord_mask_excludes_depth_ratios(self):
-        mask = ds._coord_mask(188)
+        mask = ds._coord_mask(356)
         # Left and right arm depth ratios are at indices 102 and 103
         self.assertFalse(mask[102])
         self.assertFalse(mask[103])
 
     def test_augmentations_preserve_depth(self):
         np.random.seed(42)
-        seq = np.random.rand(24, 188).astype(np.float32)
+        seq = np.random.rand(24, 356).astype(np.float32)
         seq[:, 102:104] = [0.85, 1.15]
 
         # 1. Noise
@@ -52,7 +52,7 @@ class TestArmDepths(unittest.TestCase):
 
     def test_hand_swap_swaps_arm_depths(self):
         np.random.seed(0)
-        seq = np.random.rand(24, 188).astype(np.float32)
+        seq = np.random.rand(24, 356).astype(np.float32)
         seq[:, 102:104] = [0.75, 1.25]
 
         swapped = ds._random_hand_swap(seq.copy(), p=1.0)

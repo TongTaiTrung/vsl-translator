@@ -2,7 +2,7 @@
 
 Covers: local-hand independence, palm-size guard, writeability restore,
 idle-arm gate isolation, one-hand detection, injection probability/shape,
-label preservation, train-only augmentation, 188-dim layout.
+label preservation, train-only augmentation, 356-dim layout.
 
 Run: venv/bin/python -m unittest tests.test_far_bias -v
 """
@@ -124,7 +124,7 @@ class TestIdleGate(unittest.TestCase):
                          elbow_r=(0.62, 0.1), wrist_r=(0.62, 0.05))
         res = FakeResults(pose, left=make_hand(), right=make_hand())
         vec = lm.extract(res)
-        self.assertEqual(vec.shape, (188,))
+        self.assertEqual(vec.shape, (356,))
         np.testing.assert_array_equal(vec[0:9], np.zeros(9))     # left pose
         np.testing.assert_array_equal(vec[18:60], np.zeros(42))  # left hand
         self.assertTrue(np.any(vec[9:18] != 0.0))   # right pose kept
@@ -147,7 +147,7 @@ class TestIdleGate(unittest.TestCase):
 
 class TestInjection(unittest.TestCase):
     def _one_hand_seq(self, t=24):
-        seq = np.zeros((t, 188), dtype=np.float32)
+        seq = np.zeros((t, 356), dtype=np.float32)
         rng = np.random.RandomState(1)
         seq[:, 0:9] = rng.rand(t, 9).astype(np.float32) + 0.1
         seq[:, 18:60] = rng.rand(t, 42).astype(np.float32) + 0.1
@@ -210,46 +210,49 @@ class TestInjection(unittest.TestCase):
 
 
 class TestLayout(unittest.TestCase):
-    def test_dim_188(self):
-        self.assertEqual(lm.n_features(), 188)
-        self.assertEqual(lm.BODY_ONLY_DIM, 188)
+    def test_dim_356(self):
+        self.assertEqual(lm.n_features(), 356)
+        self.assertEqual(lm.BODY_ONLY_DIM, 356)
         pose = make_pose(elbow_l=(0.38, 0.1), wrist_l=(0.38, 0.05),
                          elbow_r=(0.62, 0.1), wrist_r=(0.62, 0.05))
         vec = lm.extract(FakeResults(pose, left=make_hand(), right=make_hand()))
-        self.assertEqual(vec.shape, (188,))
+        self.assertEqual(vec.shape, (356,))
 
 
-class TestFaceOffsets(unittest.TestCase):
+class TestShoulderOffsets(unittest.TestCase):
     def test_offsets_match_formula(self):
         pose = make_pose(elbow_l=(0.38, 0.1), wrist_l=(0.38, 0.05),
                          elbow_r=(0.62, 0.1), wrist_r=(0.62, 0.05))
         left = make_hand(x0=0.3, y0=0.7)
         vec = lm.extract(FakeResults(pose, left=left, right=make_hand()))
-        fc = ((0.47 + 0.53) / 2.0, (0.05 + 0.05) / 2.0)  # ear midpoint
+        # Raised anchors: shoulder x, face-center y (ear midpoint y = 0.05).
+        anchors = [(0.4, 0.05), (0.6, 0.05), (0.5, 0.05)]
         pts = np.array([[p.x, p.y] for p in left.landmark])
         palm = max(float(np.linalg.norm(pts[0] - pts[9])),
                    float(np.linalg.norm(pts[5] - pts[17])) * 1.25)
-        expected = ((pts - np.array(fc)) / palm * lm.STD_PALM).flatten()
-        np.testing.assert_allclose(vec[104:146], expected, rtol=1e-6)
+        expected = np.concatenate(
+            [((pts - np.array(a)) / palm * lm.STD_PALM).flatten()
+             for a in anchors])
+        np.testing.assert_allclose(vec[104:230], expected, rtol=1e-6)
 
-    def test_missing_face_gives_zeros(self):
+    def test_missing_anchors_gives_zeros(self):
         pose = make_pose(elbow_l=(0.38, 0.1), wrist_l=(0.38, 0.05),
                          elbow_r=(0.62, 0.1), wrist_r=(0.62, 0.05))
-        # Wipe the ears: no pose ears and no face mesh → no face center.
+        # Wipe the ears: no pose ears and no face mesh → no raised anchors.
         pose[7] = FakePt(0, 0, 0.0)
         pose[8] = FakePt(0, 0, 0.0)
         vec = lm.extract(FakeResults(pose, left=make_hand(), right=make_hand()))
-        self.assertEqual(vec.shape, (188,))
-        np.testing.assert_array_equal(vec[104:188], np.zeros(84))
+        self.assertEqual(vec.shape, (356,))
+        np.testing.assert_array_equal(vec[104:356], np.zeros(252))
         # Hand slots still populated.
         self.assertTrue(np.any(vec[18:60] != 0.0))
 
-    def test_idle_side_zeroes_face_block(self):
+    def test_idle_side_zeroes_sh_block(self):
         pose = make_pose(elbow_l=(0.4, 0.5), wrist_l=(0.4, 0.9),
                          elbow_r=(0.62, 0.1), wrist_r=(0.62, 0.05))
         vec = lm.extract(FakeResults(pose, left=make_hand(), right=make_hand()))
-        np.testing.assert_array_equal(vec[104:146], np.zeros(42))
-        self.assertTrue(np.any(vec[146:188] != 0.0))
+        np.testing.assert_array_equal(vec[104:230], np.zeros(126))
+        self.assertTrue(np.any(vec[230:356] != 0.0))
 
 
 if __name__ == '__main__':

@@ -1,4 +1,52 @@
 # Changelog
+## Chưa phát hành — Thay face-offset bằng raised-shoulder anchors (188-dim → 356-dim)
+
+### Tại sao dim thay đổi
+- Block face-offset cũ (84 số: 42/bên, offset từng điểm tay tới trung tâm mặt)
+  bị thay bằng block shoulder-offset (252 số: 126/bên). Mỗi bên tay tính offset
+  tới 3 anchors: vai trái nâng + vai phải nâng + trung điểm hai vai, mỗi anchor
+  42 số → 126/bên. Layout mới: pose 18 | lh 42 | rh 42 | depths 2 |
+  sh_off_lh 126 [104:230] | sh_off_rh 126 [230:356] → `BODY_ONLY_DIM = 356`.
+- Lý do bỏ face-center: tâm mặt phụ thuộc tai pose (7, 8) hoặc face mesh
+  (33, 263) — khi mặt nghiêng/che/khuất là mất anchor, cả 84 số về 0 dù tay vẫn
+  thấy rõ. Vai (11, 12) là anchor bắt buộc đã có của pipeline (mất vai → frame
+  0), nên neo theo vai ổn định hơn và không thêm điểm hỏng mới.
+- Lý do "nâng lên ngang mặt": giữ x vai (vị trí thân người) nhưng lấy y face
+  center → anchor nằm ở độ cao vùng cử chỉ VSL (quanh mặt/ngực), giữ được thông
+  tin "tay cao hay thấp so với mặt" mà face-offset cũ nắm, khớp overlay
+  `draw_landmarks_test` (nối tay → 2 vai nâng + midpoint, không nối vào mặt nữa).
+- Lý do 3 anchors thay vì 1: midpoint vai cho vị trí tổng thể, 2 vai nâng giữ
+  thông tin trái/phải (tay đang lệch về vai nào) — cùng palm-normalize
+  `(pts − anchor)/palm × 0.4` nên bất biến khoảng cách camera như cũ.
+
+### `landmarks.py`
+- Mới `_get_raised_shoulders()`: (ls_raised, rs_raised, mid), giữ x vai + y face
+  center; thiếu vai hoặc thiếu mặt → `(None, None, None)`.
+- Mới `_shoulder_offsets(hand_lm, anchors, palm_size)`: concat 3 block 42 → 126;
+  missing/degenerate → `zeros(126)`.
+- `extract()` dùng anchors nâng thay `face_center`; hằng mới `SH_OFF_REF_DIM = 126`,
+  `SH_OFF_DIM = 252`, `BODY_ONLY_DIM = 356`. `_face_offsets` giữ lại dạng legacy
+  (migration/tests), không còn dùng trong `extract()`.
+
+### `model.py`, `dataset.py`, `config.py`
+- `build_model`: nhánh norm `face_n` → `sh_n`, assert 356.
+- `dataset.py`: `_random_shift` / `_random_hand_dropout` / `_random_hand_swap` /
+  `_side_active` / `inject_inactive_side` chuyển sang `SH_OFF_*`; injection sinh
+  3 anchors tổng hợp từ tư thế synthetic thay proxy `(0, -0.8)`; padding 104-dim →
+  252 zeros.
+- `config.py`: comment layout 356-dim.
+
+### Breaking change (bắt buộc)
+- Mọi `data/*/*/*.npy` (188-dim), `models/model.keras`, `models/feature_stats.npz`,
+  `models/test_set.npz` vô hiệu → thu lại data, train lại từ đầu. Không trộn
+  cũ/mới.
+
+### Test
+- `tests/test_far_bias.py`: `TestFaceOffsets` → `TestShoulderOffsets` (khớp công
+  thức 3-anchor, thiếu anchor → zeros 252, idle zero block cùng bên);
+  `test_arm_depths.py`: assert 356.
+- Verify: `venv/bin/python -m unittest tests.test_far_bias tests.test_arm_depths`
+  → 26/26 pass; `build_model` cho `input_shape (None, 24, 356)`.
 ## Chưa phát hành — Sửa kiến trúc model sau khi thêm face-offset (Per-group LayerNorm + attention pooling)
 
 - Per-group LayerNorm đầu vào: slice 188-dim thành 4 nhóm (pose 18 | hands 84

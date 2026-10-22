@@ -1,12 +1,13 @@
 {
-  "timestamp": "20261022_014709",
+  "timestamp": "20261022_222159",
   "model_file": "model.keras",
   "actions": [
     "diachi",
     "camon",
     "xinchao",
-    "khoingu",
+    "toi",
+    "khoer",
     "khochiu",
-    "noidoi"
+    "tambiet"
   ]
 }

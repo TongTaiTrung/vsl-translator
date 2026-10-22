@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 import config as cfg
-from vsl_translator.landmarks import create_model, detect, draw_landmarks_new, draw_arm_lengths
+from vsl_translator.landmarks import create_model, detect, draw_landmarks_test, draw_arm_lengths
 
 # MediaPipe indices: pose L/R shoulder = 11/12, right-hand index fingertip = 8
 POSE_L_SHOULDER = 11
@@ -25,7 +25,7 @@ def main():
                 break
             image, results = detect(frame, holistic)
             draw_arm_lengths(image, results)
-            draw_landmarks_new(image,results)
+            draw_landmarks_test(image,results)
             h, w = image.shape[:2]
 
             pose = results.pose_landmarks
@@ -38,7 +38,7 @@ def main():
                 mid = ((ls.x + rs.x) / 2.0, (ls.y + rs.y) / 2.0)
                 dx, dy = tip.x - mid[0], tip.y - mid[1]
                 dist = float(np.hypot(dx, dy))
-
+            
                 p_tip = (int(tip.x * w), int(tip.y * h))
                 p_mid = (int(mid[0] * w), int(mid[1] * h))
                 cv2.line(image, p_tip, p_mid, (0, 255, 255), 2)
@@ -48,7 +48,7 @@ def main():
                             (p_tip[0] + 10, p_tip[1] - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6,
                             (0, 0, 255), 2, cv2.LINE_AA)
-
+                
                 lines = [
                     f"dist: {dist:.1f}",
                     f"dx: {dx:+.1f}  dy: {dy:+.1f}",

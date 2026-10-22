@@ -81,7 +81,7 @@ def build_model(n_actions, sequence_len=cfg.SEQUENCE_LEN, n_features=None):
         n_actions:    Number of output classes.
         sequence_len: Number of frames per sequence (default cfg.SEQUENCE_LEN).
         n_features:   Number of keypoint features per frame (default: from
-                       landmarks.n_features() — 188 canonical features).
+                       landmarks.n_features() — 356 canonical features).
 
     Returns:
         A compiled Keras functional Model.
@@ -92,7 +92,7 @@ def build_model(n_actions, sequence_len=cfg.SEQUENCE_LEN, n_features=None):
     if n_features is None:
         n_features = BODY_ONLY_DIM
     assert n_features == BODY_ONLY_DIM, (
-        f"build_model expects the 188-dim canonical layout, got {n_features}"
+        f"build_model expects the 356-dim canonical layout, got {n_features}"
     )
     pose_end = POSE_DIM                      # 18
     hands_end = POSE_DIM + HAND_DIM * 2      # 102
@@ -105,8 +105,8 @@ def build_model(n_actions, sequence_len=cfg.SEQUENCE_LEN, n_features=None):
     pose_n = LayerNormalization()(Slice(0, pose_end)(x))
     hands_n = LayerNormalization()(Slice(pose_end, hands_end)(x))
     depths_n = LayerNormalization()(Slice(hands_end, depths_end)(x))
-    face_n = LayerNormalization()(Slice(depths_end, n_features)(x))
-    x = Concatenate()([pose_n, hands_n, depths_n, face_n])
+    sh_n = LayerNormalization()(Slice(depths_end, n_features)(x))
+    x = Concatenate()([pose_n, hands_n, depths_n, sh_n])
 
     # ── Recurrent backbone ─────────────────────────────────────────────
     x = Bidirectional(GRU(48, return_sequences=True, activation='tanh'))(x)

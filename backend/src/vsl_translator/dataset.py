@@ -119,7 +119,7 @@ def _random_shift(sequence, lo=cfg.SHIFT_RANGE[0], hi=cfg.SHIFT_RANGE[1]):
         nz = (sequence != 0.0) & coord[None, None, :]
     else:
         nz = (sequence != 0.0) & coord[None,:]
-    from vsl_translator.landmarks import POSE_DIM, HAND_DIM, FACE_REF_DIM
+    from vsl_translator.landmarks import POSE_DIM, HAND_DIM, SH_OFF_REF_DIM
     is_dx = np.zeros(n_feat, dtype=bool)
     is_dy = np.zeros(n_feat, dtype=bool)
     for i in range(0, POSE_DIM, 3):
@@ -130,14 +130,14 @@ def _random_shift(sequence, lo=cfg.SHIFT_RANGE[0], hi=cfg.SHIFT_RANGE[1]):
         is_dx[i] = True
         if i + 1 < hand_end:
             is_dy[i + 1] = True
-    # Face-offset blocks share the (x, y) pairwise layout of the hand blocks.
-    from vsl_translator.landmarks import ARM_DEPTH_DIM, FACE_OFF_DIM, BODY_ONLY_DIM
-    face_start = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM
-    face_end = face_start + FACE_OFF_DIM
-    if n_feat >= face_end:
-        for i in range(face_start, face_end, 2):
+    # Shoulder-offset blocks share the (x, y) pairwise layout of the hand blocks.
+    from vsl_translator.landmarks import ARM_DEPTH_DIM, SH_OFF_DIM, BODY_ONLY_DIM
+    sh_start = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM
+    sh_end = sh_start + SH_OFF_DIM
+    if n_feat >= sh_end:
+        for i in range(sh_start, sh_end, 2):
             is_dx[i] = True
-            if i + 1 < face_end:
+            if i + 1 < sh_end:
                 is_dy[i + 1] = True
     if sequence.ndim == 3:
         out[:, :, is_dx] += np.where(nz[:, :, is_dx], shift[0], 0.0)
@@ -162,29 +162,29 @@ def _random_hand_dropout(sequence, p=cfg.HAND_DROPOUT_PROB):
     Counters the hand-presence shortcut: when one class systematically lacks
     a hand (occlusion / out of frame), the model learns presence instead of
     motion. Operates on the canonical layout pose [0:18] | lh [18:60] | rh [60:102]
-    | arm_depths [102:104] | face_off [104:188].
+    | arm_depths [102:104] | sh_off [104:356].
 
     Skipped for one-hand samples: wiping the single active hand would erase
     the hand-shape detail that distinguishes similar one-hand signs
     (e.g. khoingu vs khochiu) — and dropping the already-zero side is a no-op.
     """
     from vsl_translator.landmarks import (
-        POSE_DIM, HAND_DIM, ARM_DEPTH_DIM, FACE_REF_DIM,
+        POSE_DIM, HAND_DIM, ARM_DEPTH_DIM, SH_OFF_REF_DIM,
     )
     if _is_one_sided(sequence):
         return sequence.copy()  # one-hand sample: keep its only active hand
     out = sequence.copy()
-    face_start = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM
+    sh_start = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM
     if np.random.rand() < p:
         hand = np.random.choice(['lh', 'rh'])
         if hand == 'lh':
             out[:, POSE_DIM:POSE_DIM + HAND_DIM] = 0.0
-            if out.shape[-1] >= face_start + FACE_REF_DIM:
-                out[:, face_start:face_start + FACE_REF_DIM] = 0.0
+            if out.shape[-1] >= sh_start + SH_OFF_REF_DIM:
+                out[:, sh_start:sh_start + SH_OFF_REF_DIM] = 0.0
         else:
             out[:, POSE_DIM + HAND_DIM:POSE_DIM + HAND_DIM * 2] = 0.0
-            if out.shape[-1] >= face_start + FACE_REF_DIM * 2:
-                out[:, face_start + FACE_REF_DIM:face_start + FACE_REF_DIM * 2] = 0.0
+            if out.shape[-1] >= sh_start + SH_OFF_REF_DIM * 2:
+                out[:, sh_start + SH_OFF_REF_DIM:sh_start + SH_OFF_REF_DIM * 2] = 0.0
     return out
 
 
@@ -201,7 +201,7 @@ def _random_hand_swap(sequence, p=cfg.HAND_SWAP_PROB):
     one-sided), creating out-of-distribution copies that blur similar signs.
     """
     from vsl_translator.landmarks import (
-        POSE_DIM, HAND_DIM, ARM_DEPTH_DIM, FACE_REF_DIM,
+        POSE_DIM, HAND_DIM, ARM_DEPTH_DIM, SH_OFF_REF_DIM,
     )
     if _is_one_sided(sequence):
         return sequence.copy()  # one-hand sample: side is real signal, don't mirror
@@ -216,13 +216,13 @@ def _random_hand_swap(sequence, p=cfg.HAND_SWAP_PROB):
             depth_slice = slice(POSE_DIM + HAND_DIM * 2, POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM)
             d = out[..., depth_slice].copy()
             out[..., depth_slice] = d[..., ::-1]
-        # Also swap face-offset sides (L↔R) if present
-        face_start = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM
-        if out.shape[-1] >= face_start + FACE_REF_DIM * 2:
-            fL = out[..., face_start:face_start + FACE_REF_DIM].copy()
-            fR = out[..., face_start + FACE_REF_DIM:face_start + FACE_REF_DIM * 2].copy()
-            out[..., face_start:face_start + FACE_REF_DIM] = fR
-            out[..., face_start + FACE_REF_DIM:face_start + FACE_REF_DIM * 2] = fL
+        # Also swap shoulder-offset sides (L↔R) if present
+        sh_start = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM
+        if out.shape[-1] >= sh_start + SH_OFF_REF_DIM * 2:
+            sL = out[..., sh_start:sh_start + SH_OFF_REF_DIM].copy()
+            sR = out[..., sh_start + SH_OFF_REF_DIM:sh_start + SH_OFF_REF_DIM * 2].copy()
+            out[..., sh_start:sh_start + SH_OFF_REF_DIM] = sR
+            out[..., sh_start + SH_OFF_REF_DIM:sh_start + SH_OFF_REF_DIM * 2] = sL
     return out
 
 
@@ -255,19 +255,19 @@ def _is_one_sided(sequence, thresh=0.15):
 
 
 def _side_active(seq_2d, side):
-    """True if the side's pose, hand, or face-offset block has any non-zero."""
+    """True if the side's pose, hand, or shoulder-offset block has any non-zero."""
     from vsl_translator.landmarks import (
-        POSE_DIM, HAND_DIM, FACE_REF_DIM, ARM_DEPTH_DIM,
+        POSE_DIM, HAND_DIM, SH_OFF_REF_DIM, ARM_DEPTH_DIM,
     )
     pose_base = 0 if side == 0 else 9
     hand_base = POSE_DIM if side == 0 else POSE_DIM + HAND_DIM
     pose_nz = np.any(seq_2d[:, pose_base:pose_base + 9] != 0.0)
     hand_nz = np.any(seq_2d[:, hand_base:hand_base + HAND_DIM] != 0.0)
-    face_start = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM
-    face_base = face_start if side == 0 else face_start + FACE_REF_DIM
-    face_nz = (seq_2d.shape[1] >= face_start + FACE_REF_DIM * 2
-               and np.any(seq_2d[:, face_base:face_base + FACE_REF_DIM] != 0.0))
-    return bool(pose_nz or hand_nz or face_nz)
+    sh_start = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM
+    sh_base = sh_start if side == 0 else sh_start + SH_OFF_REF_DIM
+    sh_nz = (seq_2d.shape[1] >= sh_start + SH_OFF_REF_DIM * 2
+             and np.any(seq_2d[:, sh_base:sh_base + SH_OFF_REF_DIM] != 0.0))
+    return bool(pose_nz or hand_nz or sh_nz)
 
 
 def inject_inactive_side(sequence, p=None):
@@ -275,16 +275,17 @@ def inject_inactive_side(sequence, p=None):
 
     Detects one-hand samples (one side's pose [0:9]/[9:18] + hand block all
     zero while the other side is active) and with probability p fills the
-    inactive side's pose + hand + face-offset slots with a quasi-stationary
+    inactive side's pose + hand + shoulder-offset slots with a quasi-stationary
     resting arm (canonical wrist y in INACTIVE_WRIST_Y_RANGE, drift
     INACTIVE_DRIFT_STD). Local hand shape is mostly static + small jitter,
-    no global wrist added. Face offsets are derived from the synthetic wrist
-    trajectory against a canonical face-center proxy (0, -0.8) plus the same
+    no global wrist added. Shoulder offsets are derived from the synthetic wrist
+    trajectory against canonical raised-shoulder anchors (shoulder x at ±0.5,
+    y at a face-level proxy, plus their midpoint) plus the same
     local hand shape, so the injected side matches the real joint distribution.
     Label-preserving. Two-hand and all-zero samples pass through unchanged.
     """
     from vsl_translator.landmarks import (
-        POSE_DIM, HAND_DIM, FACE_REF_DIM, ARM_DEPTH_DIM, STD_PALM,
+        POSE_DIM, HAND_DIM, SH_OFF_REF_DIM, ARM_DEPTH_DIM, STD_PALM,
     )
     if p is None:
         p = getattr(cfg, 'INACTIVE_INJECT_PROB', 0.35)
@@ -321,27 +322,29 @@ def inject_inactive_side(sequence, p=None):
     # Mostly-static local hand: fixed neutral shape + per-frame jitter.
     base_hand = (np.random.rand(21, 2) - 0.5) * STD_PALM * 0.8
     base_hand[0] = [0.0, 0.0]  # wrist at local origin
-    # Injected palm scale: median-scale proxy so face offsets are canonical.
+    # Injected palm scale: median-scale proxy so shoulder offsets are canonical.
     # Reuse the canonical neutral arm length as the scale reference.
     from vsl_translator.landmarks import STD_UPPER_ARM, STD_FOREARM
     inject_palm = (STD_UPPER_ARM + STD_FOREARM) / 4.0
-    # Canonical face-center proxy for the synthetic side (mid-ears ≈ origin x,
-    # above the pinned shoulders at y=0). Matches the real distribution where
-    # ears sit slightly above the shoulder line.
-    inject_fc = np.array([0.0, -0.8], dtype=np.float64)
-    face_start = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM
-    face_base = face_start if side == 0 else face_start + FACE_REF_DIM
-    has_face = seq_2d.shape[1] >= face_start + FACE_REF_DIM * 2
+    # Canonical raised-shoulder anchors for the synthetic side: shoulder x at
+    # ±0.5 lifted to a face-level y proxy, plus their midpoint. Mirrors the real
+    # _get_raised_shoulders anchors (shoulder x, face y).
+    _fc_y = -0.8
+    inject_anchors = ((-0.5, _fc_y), (0.5, _fc_y), (0.0, _fc_y))
+    sh_start = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM
+    sh_base = sh_start if side == 0 else sh_start + SH_OFF_REF_DIM
+    has_sh = seq_2d.shape[1] >= sh_start + SH_OFF_REF_DIM * 2
     for i in range(t):
         jitter = np.random.normal(0, drift, size=(21, 2))
         jitter[0] = [0.0, 0.0]
         local_hand = base_hand + jitter
         seq_2d[i, hand_base:hand_base + HAND_DIM] = local_hand.flatten()
-        if has_face:
+        if has_sh:
             wrist_pos = np.array([wrist_x[i], wrist_y[i]], dtype=np.float64)
             global_hand = local_hand / STD_PALM * inject_palm + wrist_pos
-            seq_2d[i, face_base:face_base + FACE_REF_DIM] = (
-                (global_hand - inject_fc) / inject_palm * STD_PALM).flatten()
+            blocks = [((global_hand - np.array(a)) / inject_palm * STD_PALM).flatten()
+                      for a in inject_anchors]
+            seq_2d[i, sh_base:sh_base + SH_OFF_REF_DIM] = np.concatenate(blocks)
     return out
 
 
@@ -453,16 +456,16 @@ def load_raw_dataset(data_dir=cfg.DATA_DIR, actions=cfg.ACTIONS, label_map=cfg.L
                     break
                 frame_data = np.load(frame_path)
                 if frame_data.shape == (104,):
-                    # Backward compatibility: pad 104-dim frames to 188-dim.
+                    # Backward compatibility: pad 104-dim frames to 356-dim.
                     # Zero-frames stay all zeros for Masking(0.0) compatibility;
                     # active frames get default arm depth ratio 1.0 and zero
-                    # face-offsets (no face info recoverable from stored data).
+                    # shoulder-offsets (no anchor info recoverable from stored data).
                     pad_val = 0.0 if not np.any(frame_data) else 1.0
-                    face_zeros = np.zeros(84, dtype=frame_data.dtype)
+                    sh_zeros = np.zeros(252, dtype=frame_data.dtype)
                     frame_data = np.concatenate([
                         frame_data[:102],
                         np.full(2, pad_val, dtype=frame_data.dtype),
-                        face_zeros,
+                        sh_zeros,
                     ])
                 window.append(frame_data)
 
