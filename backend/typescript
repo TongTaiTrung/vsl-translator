@@ -1,0 +1,828 @@
+Script started on Thu Oct 22 19:31:10 2026
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend]1;..lator/backend]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend\[0m[27m[24m[J[01;32m➜  [36mbackend[00m [K[?1h=[?2004hscript[32ms[32mc[32mr[32mi[32mp[32mt[39m[32mt[32ms[39m[4m[32ms[4m[32mc[4m[32mr[4m[32mi[4m[32mp[4m[32mt[4m[32ms[24m[39m[?1l>[?2004l
+]2;scripts]1;scripts[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;32m➜  [36mscripts[00m [K[?1h=[?2004h[0m[27m[24m[J[01;32m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [Kc[1m[31mc[0m[39m[1m[31mc[0m[39m[38;2;88;91;112mlear[39m[1m[31mc[1m[31ml[0m[39m[1m[31mc[1m[31ml[1m[31me[0m[39m[1m[31me[1m[31ma[0m[39m[1m[31ma[1m[31mr[0m[39m[0m[32mc[0m[32ml[0m[32me[0m[32ma[0m[32mr[39m[?1l>[?2004l
+]2;clear]1;clear[3J[H[2J[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;32m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004hl[32ml[39m[32ml[39m[38;2;88;91;112ms[39m[32ml[32ms[39m[?1l>[?2004l
+]2;ls -G]1;ls[1m[36m__pycache__[39;49m[0m           cam_test.py           convenient_predict.py manage_classes.py     migrate_data.py       predict_live.py       realtime_test.py
+add_noise.py          collect_data.py       inspect_videos.py     manage_model.py       predict.py            realtime_predict.py   train.py
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;32m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004hc[1m[31mc[0m[39m[1m[31mc[0m[39m[38;2;88;91;112mlear[39m[1m[31mc[1m[31ml[0m[39m[1m[31mc[1m[31ml[1m[31me[0m[39m[1m[31me[1m[31ma[0m[39m[1m[31ma[1m[31mr[0m[39m[0m[32mc[0m[32ml[0m[32me[0m[32ma[0m[32mr[39m[?1l>[?2004l
+]2;clear]1;clear[3J[H[2J[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;32m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004hp[1m[31mp[0m[39m[1m[31mp[0m[39m[38;2;88;91;112mython3 server.py[39m[16D[1m[31mp[1m[31my[0m[39m[1m[31mp[1m[31my[1m[31mt[0m[39m[1m[31mt[1m[31mh[0m[39m[1m[31mh[1m[31mo[0m[39m[1m[31mo[1m[31mn[0m[39m[0m[32mp[0m[32my[0m[32mt[0m[32mh[0m[32mo[0m[32mn[39m[32mn[32m3[39m[32m3[32m [39m[32m3[39m[39m [39mm[39m [39m [39m [39m [39m [39m [39m [39m [8D[4mm[24m[38;2;88;91;112main.py --seq xinchao toi toi khoer diachi khoer camon[39m[53D[4mm[39m[4ma[24m[4mm[24m[24m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [53D[38;2;88;91;112main.py --seq xinchao toi toi khoer diachi khoer camon[39m[53D[24m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [54D[38;2;88;91;112mserver.py[39m[9D[39mc[39m [39m [39m [39m [39m [39m [39m [39m [8D[4mc[24m[38;2;88;91;112mollect_data.py --action khoer[39m[29D[24m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [30D[38;2;88;91;112mserver.py[39m[9D[39mm[39m [39m [39m [39m [39m [39m [39m [39m [8D[4mm[24m[38;2;88;91;112main.py --seq xinchao toi toi khoer diachi khoer camon[39m[53D[4mm[39m[4ma[24m[4ma[39m[4mn[24m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [51D[38;2;88;91;112mage_classes.py add khoer[39m[24D[4mn[39m[4ma[24m[4ma[39m[4mg[24m[4mg[39m[4me[24m[39m_[39mc[39ml[39ma[39ms[39ms[39me[39ms[39m.[39mp[39my[39m [39ma[39md[39md[39m [39mk[39mh[39mo[39me[39mr[22D[4me[4m_[4mc[4ml[4ma[4ms[4ms[4me[4ms[4m.[4mp[4my[24m[10C [38;2;88;91;112mr[39m [39m [38;2;88;91;112mer[39m [39m [39m [38;2;88;91;112moer[39m [39m [39m [39m [38;2;88;91;112mhoer[39m [39m [39m [39m [39m [38;2;88;91;112mkhoer[39m[39mk[39mh[39mo[39mc[39m [38;2;88;91;112mhiu[39m[39mh[39mi[39mu[?1l>[?2004l
+]2;python3 manage_classes.py add khochiu]1;python3
+✅ Đã thêm 1 class: khochiu
+   Tổng số class: 6
+
+📹 Tiếp theo, thu thập dữ liệu cho các class mới:
+   python scripts/collect_data.py --action khochiu
+
+🏋️  Sau đó train lại model:
+   python scripts/train.py
+
+⚠️  Các class đã thay đổi — model cũ không còn hợp lệ.
+   Xoá model cũ? (y/n) [y]: y
+   ✓ Đã xoá model.keras
+   ✓ Đã xoá feature_stats.npz
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;32m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004hc[1m[31mc[0m[39m[1m[31mc[0m[39m[38;2;88;91;112mlear[39m[1m[31mc[1m[31mo[0m[39m[39m [39m [39m [38;2;88;91;112mre[39m[1m[31mc[1m[31mo[1m[31ml[0m[39m[39m [0m[32mc[0m[32mo[0m[32ml[39m[32mc[32mo[39m[39m [1m[31mc[1m[31mo[0m[39m[38;2;88;91;112mre[39m[1m[31mc[0m[39m[0m[39m [39m [39m [1m[31mc[0m[39m[38;2;88;91;112mlear[39m[0m[39m [39m [39m [39m [39m d[32md[39m[32md[39m[38;2;88;91;112meactivate[39m[9D[32md[32ma[39m[39m [39m [39m [39m [39m [39m [39m [39m [8D[1m[31md[1m[31ma[0m[39m[1m[31md[0m[39m[0m[39m [0m[32md[39m[32md[39m[38;2;88;91;112meactivate[39m[9D[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [10Dp[1m[31mp[0m[39m[1m[31mp[0m[39m[38;2;88;91;112mython3 manage_classes.py add khochiu[39m[36D[1m[31mp[1m[31my[0m[39m[1m[31mp[1m[31my[1m[31mt[0m[39m[1m[31mt[1m[31mh[0m[39m[1m[31mh[1m[31mo[0m[39m[1m[31mo[1m[31mn[0m[39m[0m[32mp[0m[32my[0m[32mt[0m[32mh[0m[32mo[0m[32mn[39m[32mn[32m3[39m[32m3[32m [39m[32m3[39m[39m [39mc[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [28D[4mc[24m[38;2;88;91;112mollect_data.py --action khoer[39m[29D[4mc[39m[4mo[24m[4mo[39m[4ml[24m[39ml[39me[39mc[39mt[39m_[39md[39ma[39mt[39ma[39m.[39mp[39my[39m [39m-[39m-[39ma[39mc[39mt[39mi[39mo[39mn[39m [39mk[39mh[39mo[39me[39mr[28D[4ml[4ml[4me[4mc[4mt[4m_[4md[4ma[4mt[4ma[4m.[4mp[4my[24m[15C     [38;2;88;91;112mkhoer[39m[39mk[39mh[39mo[39mc[39m [38;2;88;91;112mhiu[39m[39mh[39mi[39mu[?1l>[?2004l
+]2;python3 collect_data.py --action khochiu]1;python3Collecting data for action: 'khochiu' (15 sequences of 12 frames)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792672310.052290 2384436 gl_context.cc:369] GL version: 2.1 (2.1 Metal - 91.7), renderer: Apple M3
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+W0000 00:00:1792672310.138608 2384717 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672310.193185 2384717 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672310.195669 2384718 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672310.197057 2384713 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672310.197540 2384714 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672310.209655 2384713 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672310.219990 2384718 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672310.220401 2384714 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672310.275084 2384719 landmark_projection_calculator.cc:186] Using NORM_RECT without IMAGE_DIMENSIONS is only supported for the square ROI. Provide IMAGE_DIMENSIONS or use PROJECTION_MATRIX.
+  Seq 1: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 2: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 3: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 4: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 5: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 6: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 7: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 8: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 9: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 10: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 11: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 12: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 13: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 14: 0/12 zero frames (missing/untrusted landmarks).
+  Seq 15: 0/12 zero frames (missing/untrusted landmarks).
+Finished collecting 15 sequences for 'khochiu'.
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;32m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004hp[1m[31mp[0m[39m[1m[31mp[0m[39m[38;2;88;91;112mython3 collect_data.py --action khochiu[39m[39D[1m[31mp[1m[31my[0m[39m[1m[31mp[1m[31my[1m[31mt[0m[39m[1m[31mt[1m[31mh[0m[39m[1m[31mh[1m[31mo[0m[39m[1m[31mo[1m[31mn[0m[39m[0m[32mp[0m[32my[0m[32mt[0m[32mh[0m[32mo[0m[32mn[39m[32mn[32m3[39m[32m3[32m [39m[32m3[39m[39m [39mt[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [31D[4mt[24m[38;2;88;91;112mest.py[39m[4mt[39m[4mr[24m[39m [39m [39m [39m [39m [38;2;88;91;112main.py[39m[4mr[39m[4ma[24m[4ma[39m[4mi[24m[4mi[39m[4mn[24m[4mn[39m[4m.[24m[4m.[39m[4mp[24m[4mp[39m[4my[24m[16D[39m [39m [39m [39m [39m [39m [39m  [24m [24m [24m [24m [24m [24m [24m [24m [16Dp[1m[31mp[0m[39m[1m[31mp[0m[39m[38;2;88;91;112mython3 collect_data.py --action khochiu[39m[39D[1m[31mp[1m[31my[0m[39m[1m[31mp[1m[31my[1m[31mt[0m[39m[1m[31mt[1m[31mh[0m[39m[1m[31mh[1m[31mo[0m[39m[1m[31mo[1m[31mn[0m[39m[0m[32mp[0m[32my[0m[32mt[0m[32mh[0m[32mo[0m[32mn[39m[32mn[32m3[39m[32m3[32m [39m[32m3[39m[39m [39ma[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [31D[4ma[24m[38;2;88;91;112mdd_noise.py --action khoer --copies 2 --noise-std 0.02[39m[54D[4ma[39m[4md[24m[4md[39m[4md[24m[39m_[39mn[39mo[39mi[39ms[39me[39m.[39mp[39my[39m [39m-[39m-[39ma[39mc[39mt[39mi[39mo[39mn[39m [39mk[39mh[39mo[39me[39mr[39m [39m-[39m-[39mc[39mo[39mp[39mi[39me[39ms[39m [39m2[39m [39m-[39m-[39mn[39mo[39mi[39ms[39me[39m-[39ms[39mt[39md[39m [39m0[39m.[39m0[39m2[53D[4md[4m_[4mn[4mo[4mi[4ms[4me[4m.[4mp[4my[24m[43C[8D[8C[P[28C [29D[P[28C [29Dc --copies 2 --noise-std 0.02[28Dh --copies 2 --noise-std 0.02[28Di --copies 2 --noise-std 0.02[28Du --copies 2 --noise-std 0.02[28D[?1l>[?2004l
+]2;python3 add_noise.py --action khochiu --copies 2 --noise-std 0.02]1;python3  khochiu/1 (12 frames) → khochiu/16
+  khochiu/1 (12 frames) → khochiu/17
+  khochiu/2 (12 frames) → khochiu/18
+  khochiu/2 (12 frames) → khochiu/19
+  khochiu/3 (12 frames) → khochiu/20
+  khochiu/3 (12 frames) → khochiu/21
+  khochiu/4 (12 frames) → khochiu/22
+  khochiu/4 (12 frames) → khochiu/23
+  khochiu/5 (12 frames) → khochiu/24
+  khochiu/5 (12 frames) → khochiu/25
+  khochiu/6 (12 frames) → khochiu/26
+  khochiu/6 (12 frames) → khochiu/27
+  khochiu/7 (12 frames) → khochiu/28
+  khochiu/7 (12 frames) → khochiu/29
+  khochiu/8 (12 frames) → khochiu/30
+  khochiu/8 (12 frames) → khochiu/31
+  khochiu/9 (12 frames) → khochiu/32
+  khochiu/9 (12 frames) → khochiu/33
+  khochiu/10 (12 frames) → khochiu/34
+  khochiu/10 (12 frames) → khochiu/35
+  khochiu/11 (12 frames) → khochiu/36
+  khochiu/11 (12 frames) → khochiu/37
+  khochiu/12 (12 frames) → khochiu/38
+  khochiu/12 (12 frames) → khochiu/39
+  khochiu/13 (12 frames) → khochiu/40
+  khochiu/13 (12 frames) → khochiu/41
+  khochiu/14 (12 frames) → khochiu/42
+  khochiu/14 (12 frames) → khochiu/43
+  khochiu/15 (12 frames) → khochiu/44
+  khochiu/15 (12 frames) → khochiu/45
+Done: 30 noisy sequences for 'khochiu' (std=0.02).
+Done: 30 noisy sequences across 1 action(s) (std=0.02).
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;32m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004hp[1m[31mp[0m[39m[1m[31mp[0m[39m[38;2;88;91;112mython3 add_noise.py --action khochiu --copies 2 --noise-std 0.02[39m[64D[1m[31mp[1m[31my[0m[39m[1m[31mp[1m[31my[1m[31mt[0m[39m[1m[31mt[1m[31mh[0m[39m[1m[31mh[1m[31mo[0m[39m[1m[31mo[1m[31mn[0m[39m[0m[32mp[0m[32my[0m[32mt[0m[32mh[0m[32mo[0m[32mn[39m[32mn[32m3[39m[32m3[32m [39m[32m3[39m[39m [39mt[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [56D[4mt[24m[38;2;88;91;112mest.py[39m[4mt[39m[4mr[24m[39m [39m [39m [39m [39m [38;2;88;91;112main.py[39m[4mr[39m[4ma[24m[4ma[39m[4mi[24m[4mi[39m[4mn[24m[4mn[39m[4m.[24m[4m.[39m[4mp[24m[4mp[39m[4my[24m[?1l>[?2004l
+]2;python3 train.py]1;python3============================================================
+  VSL Translator — Training Pipeline
+============================================================
+  ℹ️  Không có model cũ → bỏ qua backup.
+Loaded raw dataset: 270 total sequences from ['diachi (45 raw)', 'camon (45 raw)', 'xinchao (45 raw)', 'toi (45 raw)', 'khoer (45 raw)', 'khochiu (45 raw)']
+  Held-out test set saved (41 samples, untouched by training)
+Augmented train data: 188 → 1692 samples (8x expansion)
+  Feature stats saved to /Users/trungtran/Desktop/vsl-translator/backend/models/feature_stats.npz (from train set only)
+
+  Dataset (No Leakage):
+    Train raw : 188 samples → 1692 augmented
+    Val raw   : 41 samples (unaugmented, strictly separated)
+    Classes   : 6 (diachi, camon, xinchao, toi, khoer, khochiu)
+    Shape     : (12, 188)
+    Batch     : 16
+  Class weights:
+    diachi          → 0.9792
+    camon           → 1.0108
+    xinchao         → 0.9792
+    toi             → 1.0108
+    khoer           → 1.0108
+    khochiu         → 1.0108
+
+  Model: 122,463 parameters
+  LR schedule: warmup 10 epochs → cosine anneal 1e-03 → 1e-06
+  Early stop: patience=60, start_epoch=30, target_acc=0.98, target_loss=0.05
+  Overfitting gap threshold: 0.25
+
+  Bắt đầu training (500 epochs tối đa)...
+
+┌─────┬────────────┬────────────┬────────────┬────────────┬────────────┬───────────┬────────┐
+│ Ep  │ Train Loss │ Train Acc  │ Val Loss   │ Val Acc    │ LR         │ OvFit Gap │ Status │
+├─────┼────────────┼────────────┼────────────┼────────────┼────────────┼───────────┼────────┤
+│   1 │   2.206320 │     0.1755 │   1.646071 │     0.3171 │   1.00e-06 │   -0.1415 │ ↓L ↑A  │
+│   2 │   1.020953 │     0.5301 │   0.233111 │     1.0000 │   1.01e-04 │   -0.4699 │ ↓L ↑A  │
+│   3 │   0.395533 │     0.8446 │   0.238746 │     1.0000 │   2.01e-04 │   -0.1554 │   ──   │
+│   4 │   0.287890 │     0.9243 │   0.246159 │     1.0000 │   3.01e-04 │   -0.0757 │   ──   │
+│   5 │   0.248914 │     0.9610 │   0.239960 │     1.0000 │   4.01e-04 │   -0.0390 │   ──   │
+│   6 │   0.239247 │     0.9687 │   0.219792 │     1.0000 │   5.01e-04 │   -0.0313 │ ↓L     │
+│   7 │   0.215551 │     0.9775 │   0.204890 │     1.0000 │   6.00e-04 │   -0.0225 │ ↓L     │
+│   8 │   0.212377 │     0.9840 │   0.194804 │     1.0000 │   7.00e-04 │   -0.0160 │ ↓L     │
+│   9 │   0.200649 │     0.9870 │   0.184995 │     1.0000 │   8.00e-04 │   -0.0130 │ ↓L     │
+│  10 │   0.192660 │     0.9905 │   0.175765 │     1.0000 │   9.00e-04 │   -0.0095 │ ↓L     │
+│  11 │   0.183677 │     0.9976 │   0.168045 │     1.0000 │   1.00e-03 │   -0.0024 │ ↓L     │
+│  12 │   0.179385 │     0.9965 │   0.162559 │     1.0000 │   1.00e-03 │   -0.0035 │ ↓L     │
+│  13 │   0.176514 │     0.9959 │   0.161264 │     1.0000 │   1.00e-03 │   -0.0041 │ ↓L     │
+│  14 │   0.172270 │     0.9994 │   0.159934 │     1.0000 │   1.00e-03 │   -0.0006 │ ↓L     │
+│  15 │   0.168532 │     0.9994 │   0.154443 │     1.0000 │   1.00e-03 │   -0.0006 │ ↓L     │
+│  16 │   0.166657 │     0.9988 │   0.153696 │     1.0000 │   1.00e-03 │   -0.0012 │ ↓L     │
+│  17 │   0.164481 │     1.0000 │   0.151459 │     1.0000 │   1.00e-03 │   +0.0000 │ ↓L     │
+│  18 │   0.161933 │     1.0000 │   0.152164 │     1.0000 │   9.99e-04 │   +0.0000 │   ──   │
+│  19 │   0.161598 │     0.9994 │   0.151481 │     1.0000 │   9.99e-04 │   -0.0006 │   ──   │
+│  20 │   0.159565 │     1.0000 │   0.149783 │     1.0000 │   9.99e-04 │   +0.0000 │ ↓L     │
+│  21 │   0.159539 │     0.9988 │   0.149151 │     1.0000 │   9.99e-04 │   -0.0012 │ ↓L     │
+│  22 │   0.157116 │     1.0000 │   0.148308 │     1.0000 │   9.99e-04 │   +0.0000 │ ↓L     │
+│  23 │   0.156352 │     1.0000 │   0.147944 │     1.0000 │   9.99e-04 │   +0.0000 │ ↓L     │
+│  24 │   0.155702 │     1.0000 │   0.147166 │     1.0000 │   9.98e-04 │   +0.0000 │ ↓L     │
+│  25 │   0.154817 │     1.0000 │   0.146401 │     1.0000 │   9.98e-04 │   +0.0000 │ ↓L     │
+│  26 │   0.153491 │     1.0000 │   0.146000 │     1.0000 │   9.98e-04 │   +0.0000 │ ↓L     │
+│  27 │   0.153120 │     1.0000 │   0.145045 │     1.0000 │   9.97e-04 │   +0.0000 │ ↓L     │
+│  28 │   0.152139 │     1.0000 │   0.145268 │     1.0000 │   9.97e-04 │   +0.0000 │   ──   │
+│  29 │   0.151902 │     1.0000 │   0.144309 │     1.0000 │   9.97e-04 │   +0.0000 │ ↓L     │
+│  30 │   0.151106 │     1.0000 │   0.145262 │     1.0000 │   9.96e-04 │   +0.0000 │   ──   │
+│  31 │   0.151347 │     1.0000 │   0.145324 │     1.0000 │   9.96e-04 │   +0.0000 │   ──   │
+│  32 │   0.149596 │     1.0000 │   0.143583 │     1.0000 │   9.95e-04 │   +0.0000 │ ↓L     │
+└─────┴────────────┴────────────┴────────────┴────────────┴────────────┴───────────┴────────┘
+
+  📊 Best val_loss : 0.143583 (epoch 32)
+  📊 Best val_acc  : 1.0000   (epoch 2)
+  ✅ No significant overfitting (gap ≈ 0.0000)
+
+  ✅ Đã khôi phục weights tốt nhất (val_loss=0.143583)
+  🛑 Dừng tại epoch 32: ➖ Hội tụ: val_loss/val_acc giậm chân 30 epochs (best_loss=0.143583, best_acc=1.0000)
+
+============================================================
+  Kết quả cuối cùng
+============================================================
+  🔄 Nạp lại checkpoint tốt nhất từ /Users/trungtran/Desktop/vsl-translator/backend/models/model.keras để đánh giá...
+
+  Train-aug Loss: 0.143624  Train-aug Acc : 1.0000 (fit on perturbed copies)
+  Train Loss : 0.143593    Train Acc : 1.0000 (clean raw train)
+  Val Loss   : 0.143583    Val Acc   : 1.0000 (tuning signal — optimistic, checkpoint was selected on val)
+  Gap        : +0.0000 (clean train minus val)
+  Epochs     : 32/500
+
+  Classification Report:
+              precision    recall  f1-score   support
+
+      diachi     1.0000    1.0000    1.0000         7
+       camon     1.0000    1.0000    1.0000         7
+     xinchao     1.0000    1.0000    1.0000         6
+         toi     1.0000    1.0000    1.0000         7
+       khoer     1.0000    1.0000    1.0000         7
+     khochiu     1.0000    1.0000    1.0000         7
+
+    accuracy                         1.0000        41
+   macro avg     1.0000    1.0000    1.0000        41
+weighted avg     1.0000    1.0000    1.0000        41
+
+
+  Confusion Matrix:
+                diachi    camon  xinchao      toi    khoer  khochiu
+   diachi          7        0        0        0        0        0  │ 100%
+    camon          0        7        0        0        0        0  │ 100%
+  xinchao          0        0        6        0        0        0  │ 100%
+      toi          0        0        0        7        0        0  │ 100%
+    khoer          0        0        0        0        7        0  │ 100%
+  khochiu          0        0        0        0        0        7  │ 100%
+
+
+  Held-out Test Loss: 0.143461    Test Acc: 1.0000  ← headline result (unseen during training)
+              precision    recall  f1-score   support
+
+      diachi     1.0000    1.0000    1.0000         6
+       camon     1.0000    1.0000    1.0000         7
+     xinchao     1.0000    1.0000    1.0000         7
+         toi     1.0000    1.0000    1.0000         7
+       khoer     1.0000    1.0000    1.0000         7
+     khochiu     1.0000    1.0000    1.0000         7
+
+    accuracy                         1.0000        41
+   macro avg     1.0000    1.0000    1.0000        41
+weighted avg     1.0000    1.0000    1.0000        41
+
+  Confidence Analysis (val set):
+    Mean confidence : 0.7984
+    Min confidence  : 0.7762
+    Max confidence  : 0.8237
+
+  ✅ Model saved: /Users/trungtran/Desktop/vsl-translator/backend/models/model.keras
+============================================================
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;32m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004hp[1m[31mp[0m[39m[1m[31mp[0m[39m[38;2;88;91;112mython3 train.py[39m[15D[1m[31mp[1m[31my[0m[39m[1m[31mp[1m[31my[1m[31mt[0m[39m[1m[31mt[1m[31mh[0m[39m[1m[31mh[1m[31mo[0m[39m[1m[31mo[1m[31mn[0m[39m[0m[32mp[0m[32my[0m[32mt[0m[32mh[0m[32mo[0m[32mn[39m[32mn[32m3[39m[32m3[32m [39m[32m3[39m[39m [39mr[39m [39m [39m [39m [39m [39m [39m [4mr[24m[38;2;88;91;112mealtime_predict.py[39m[18D[4mr[39m[4me[24m[4me[39m[4ma[24m[4ma[39m[4ml[24m[39mt[39mi[39mm[39me[39m_[39mp[39mr[39me[39md[39mi[39mc[39mt[39m.[39mp[39my[16D[4ml[4mt[4mi[4mm[4me[4m_[4mp[4mr[4me[4md[4mi[4mc[4mt[4m.[4mp[4my[24m[?1l>[?2004l
+]2;python3 realtime_predict.py]1;python3Feature stats loaded for standardisation.
+Model loaded. Press 'q' in the video window to quit.
+Backspace: xoa tu cuoi | C: xoa ca cau | Q: thoat (cua so video phai co focus)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792672424.301705 2387943 gl_context.cc:369] GL version: 2.1 (2.1 Metal - 91.7), renderer: Apple M3
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+W0000 00:00:1792672424.389288 2388201 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672424.433832 2388201 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672424.435774 2388207 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672424.436010 2388202 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672424.436711 2388205 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672424.443235 2388202 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672424.444674 2388205 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672424.447515 2388207 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672424.502221 2388204 landmark_projection_calculator.cc:186] Using NORM_RECT without IMAGE_DIMENSIONS is only supported for the square ROI. Provide IMAGE_DIMENSIONS or use PROJECTION_MATRIX.
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;32m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004hpython3 realtime_predict.py[27D[32mp[32my[32mt[32mh[32mo[32mn[32m3[39m [4mr[4me[4ma[4ml[4mt[4mi[4mm[4me[4m_[4mp[4mr[4me[4md[4mi[4mc[4mt[4m.[4mp[4my[24m[?1l>[?2004l
+]2;python3 realtime_predict.py]1;python3Feature stats loaded for standardisation.
+Model loaded. Press 'q' in the video window to quit.
+Backspace: xoa tu cuoi | C: xoa ca cau | Q: thoat (cua so video phai co focus)
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792672628.091243 2392370 gl_context.cc:369] GL version: 2.1 (2.1 Metal - 91.7), renderer: Apple M3
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+W0000 00:00:1792672628.185745 2392657 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672628.236161 2392651 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672628.239181 2392655 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672628.239302 2392654 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672628.239582 2392658 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672628.245068 2392658 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672628.254196 2392654 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672628.254806 2392655 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672628.313442 2392658 landmark_projection_calculator.cc:186] Using NORM_RECT without IMAGE_DIMENSIONS is only supported for the square ROI. Provide IMAGE_DIMENSIONS or use PROJECTION_MATRIX.
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;32m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004hpython3 realtime_predict.py[27D[32mp[32my[32mt[32mh[32mo[32mn[32m3[39m [4mr[4me[4ma[4ml[4mt[4mi[4mm[4me[4m_[4mp[4mr[4me[4md[4mi[4mc[4mt[4m.[4mp[4my[24m[27D[39m [39m [39m [39m [39m [39m [39m  [24m [24m [24m [24m [24m [24m [24m [24m [24m [24m [24m [24m [24m [24m [24m [24m [24m [24m [24m [27Dc[1m[31mc[0m[39m[1m[31mc[0m[39m[38;2;88;91;112mlear[39m[1m[31mc[1m[31ml[0m[39m[1m[31mc[1m[31ml[1m[31me[0m[39m[1m[31me[1m[31ma[0m[39m[1m[31ma[1m[31mr[0m[39m[0m[32mc[0m[32ml[0m[32me[0m[32ma[0m[32mr[39m[?1l>[?2004l
+]2;clear]1;clear[3J[H[2J[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;32m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004h.[32m.[39m[32m.[39m[38;2;88;91;112m.[39m[39m [39m p[1m[31mp[0m[39m[1m[31mp[0m[39m[38;2;88;91;112mython3 realtime_predict.py[39m[26D[1m[31mp[1m[31my[0m[39m[1m[31mp[1m[31my[1m[31mt[0m[39m[1m[31mt[1m[31mh[0m[39m[1m[31mh[1m[31mo[0m[39m[1m[31mo[1m[31mn[0m[39m[0m[32mp[0m[32my[0m[32mt[0m[32mh[0m[32mo[0m[32mn[39m[32mn[32m3[39m[32mn[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [21D[38;2;88;91;112m3 realtime_predict.py[39m[21D[32mo[39m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [22D[1m[31mp[1m[31my[1m[31mt[1m[31mh[1m[31mo[0m[39m[38;2;88;91;112mn3 realtime_predict.py[39m[22D[1m[31mh[0m[39m[0m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [23D[38;2;88;91;112mon3 realtime_predict.py[39m[23D[1m[31mt[0m[39m[0m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [24D[38;2;88;91;112mhon3 realtime_predict.py[39m[24D[1m[31mp[1m[31my[0m[39m[0m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [25D[38;2;88;91;112mthon3 realtime_predict.py[39m[25D[1m[31mp[0m[39m[0m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [26D[1m[31mp[0m[39m[38;2;88;91;112mython3 realtime_predict.py[39m[26D[0m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [27Dp[1m[31mp[0m[39m[1m[31mp[0m[39m[38;2;88;91;112mython3 realtime_predict.py[39m[26D[1m[31mp[1m[31my[0m[39m[1m[31mp[1m[31my[1m[31mt[0m[39m[1m[31mt[1m[31mh[0m[39m[1m[31mh[1m[31mo[0m[39m[1m[31mo[1m[31mn[0m[39m[0m[32mp[0m[32my[0m[32mt[0m[32mh[0m[32mo[0m[32mn[39m[32mn[32m3[39m[32m3[32m [39m[32m3[39m[39m [39m.[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [18D[4m.[24m[38;2;88;91;112m./tests/test_universal_connector.py[39m[35D[4m.[39m[4m.[24m[4m.[24m[24m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [35D[38;2;88;91;112m./tests/test_universal_connector.py[39m[35D[24m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [36D[38;2;88;91;112mrealtime_predict.py[39m[19D[39m.[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [18D[4m.[24m[38;2;88;91;112m./tests/test_universal_connector.py[39m[35D[4m.[39m[4m.[24m[4m.[39m[4m/[24m[4m/[39m[4m.[24m[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [32D[4m.[4m.[24m[4m.[4m/[24m[24m.[24m.[24m/[24m.[24m.[24m/
+[J[1;36mbackend[0m/       [J[1;36mfrontend[0m/      [J[1;36mgraphify-out[0m/  [J[1;36mvenv[0m/        [J[A[0m[27m[24m[24C[32mpython3[39m ../../[K[4m.[4m.[4m/[4m.[4m.[4m/[24m[4m/[4mf[24m[4mf[4mr[24m[4mr[4mo[24m[4mo[4mn[24m[4mn[4mt[24m[4mt[4me[24m[4me[4mn[24m[4mn[4md[24m[4md[4m/[24m[15D[24m.[24m.[24m/[24m.[24m.[24m/[24mf[24mr[24mo[24mn[24mt[24me[24mn[24md[24m/
+[J[J[1;36m__pycache__[0m/  [Jcaller.py     [Jserver.py   [J[A[0m[27m[24m[24C[32mpython3[39m ../../frontend/[K[15D[4m.[4m.[4m/[4m.[4m.[4m/[4mf[4mr[4mo[4mn[4mt[4me[4mn[4md[4m/[24m[4m/[4ms[24m[4ms[4me[24m[4me[4mr[24m[4mr[4mv[24m[4mv[4me[24m[4me[4mr[24m[4mr[4m.[24m[4m.[4mp[24m[4mp[4my[24m[?1l>[?2004l
+[J]2;python3 ../../frontend/server.py]1;python3Serving at http://127.0.0.1:8000
+127.0.0.1 - - [22/Oct/2026 19:37:49] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:37:50] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:37:50] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:37:51] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:37:51] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:37:51] "GET / HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 52664)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 766, in __init__
+    self.handle()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/server.py", line 440, in handle
+    self.handle_one_request()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/server.py", line 428, in handle_one_request
+    method()
+  File "/Users/trungtran/Desktop/vsl-translator/backend/scripts/../../frontend/server.py", line 115, in do_GET
+    with open("index.html", "rb") as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'index.html'
+----------------------------------------
+127.0.0.1 - - [22/Oct/2026 19:37:54] "GET / HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 52665)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 766, in __init__
+    self.handle()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/server.py", line 440, in handle
+    self.handle_one_request()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/server.py", line 428, in handle_one_request
+    method()
+  File "/Users/trungtran/Desktop/vsl-translator/backend/scripts/../../frontend/server.py", line 115, in do_GET
+    with open("index.html", "rb") as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'index.html'
+----------------------------------------
+^CTraceback (most recent call last):
+  File "/Users/trungtran/Desktop/vsl-translator/backend/scripts/../../frontend/server.py", line 123, in <module>
+    ThreadingHTTPServer(("127.0.0.1", 8000), Handler).serve_forever()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 235, in serve_forever
+    ready = selector.select(poll_interval)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/selectors.py", line 415, in select
+    fd_event_list = self._selector.poll(timeout)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;31m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004hpython3 ../../frontend/server.py[32D[32mp[32my[32mt[32mh[32mo[32mn[32m3[39m [4m.[4m.[4m/[4m.[4m.[4m/[4mf[4mr[4mo[4mn[4mt[4me[4mn[4md[4m/[4ms[4me[4mr[4mv[4me[4mr[4m.[4mp[4my[24m[?1l>[?2004l
+]2;python3 ../../frontend/server.py]1;python3Serving at http://127.0.0.1:8000
+127.0.0.1 - - [22/Oct/2026 19:38:03] "GET / HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 52668)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 766, in __init__
+    self.handle()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/server.py", line 440, in handle
+    self.handle_one_request()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/http/server.py", line 428, in handle_one_request
+    method()
+  File "/Users/trungtran/Desktop/vsl-translator/backend/scripts/../../frontend/server.py", line 115, in do_GET
+    with open("index.html", "rb") as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'index.html'
+----------------------------------------
+^CTraceback (most recent call last):
+  File "/Users/trungtran/Desktop/vsl-translator/backend/scripts/../../frontend/server.py", line 123, in <module>
+    ThreadingHTTPServer(("127.0.0.1", 8000), Handler).serve_forever()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 235, in serve_forever
+    ready = selector.select(poll_interval)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/selectors.py", line 415, in select
+    fd_event_list = self._selector.poll(timeout)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend/scripts]1;..ckend/scripts]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend/scripts\[0m[27m[24m[J[01;31m➜  [36mscripts[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004h.[32m.[39m[32m.[39m[38;2;88;91;112m.[39m[32m.[32m.[39m[4m[32m.[4m[32m.[24m[39m[?1l>[?2004l
+]2;..]1;..[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/backend]1;..lator/backend]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/backend\[0m[27m[24m[J[01;32m➜  [36mbackend[00m [01;34mgit:([31mmain[34m) [33m✗[00m [K[?1h=[?2004h[0m[27m[24m[J[01;32m➜  [36mbackend[00m [K.[32m.[39m[32m.[39m[38;2;88;91;112m.[39m[32m.[32m.[39m[4m[32m.[4m[32m.[24m[39m[?1l>[?2004l
+]2;..]1;..[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator]1;..sl-translator]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator\[0m[27m[24m[J[01;32m➜  [36mvsl-translator[00m [K[?1h=[?2004hf[4mf[24m[4mf[24m[38;2;88;91;112mrontend[39m[24mf
+[0mFG                    fc-cat                fdesetup              fi                    finger                footprint             fsck_apfs             fstyp_udf           
+FIGNORE               fc-conflist           fdisk                 fibreconfig           firmwarepasswd        for                   fsck_cs               function            
+FPATH                 fc-genconf            ffescape              fignore               fixproc               foreach               fsck_exfat            funzip              
+FUNCNEST              fc-list               ffeval                file                  flex                  fourcc2pixfmt         fsck_fskit            fuser               
+FX                    fc-match              ffhash                filebyproc.d          flex++                fpath                 fsck_hfs                                  
+f2py                  fc-pattern            ffmpeg                filecoordinationd     float                 fping                 fsck_msdos                                
+false                 fc-query              ffplay                fileproviderctl       fm                    freetype-config       fsck_udf                                  
+[Jfastbase64            [Jfc-scan               [Jffprobe               [Jfiltercalltree        [Jfmt                   [Jfribidi               [Jfstyp                 [J                    
+fastbase64.coreutils  [Jfc-validate           [Jfg_bold               [Jfind                  [Jfold                  [J[1;36mfrontend[0m/             [Jfstyp_hfs             [J                    
+fc                    [Jfcgistarter           [Jfg_no_bold            [Jfindrule              [Jfontrestore           [Jfs_usage              [Jfstyp_msdos           [J                    
+fc-cache              [Jfddist                [Jfgrep                 [Jfindrule5.34          [Jfonttools             [Jfsck                  [Jfstyp_ntfs            [J                    
+[0m[27m[24m[J[01;32m➜  [36mvsl-translator[00m f[38;2;88;91;112mrontend[39m[K[4mf[24m[4mf[39m[4mr[24m[4mf[4mr[39m[4mo[24m[4mo[39m[4mn[24m[4mn[39m[4mt[24m[4m[32mf[4m[32mr[4m[32mo[4m[32mn[4m[32mt[4m[32me[4m[32mn[4m[32md[1m[4m[32m/[0m[24m[39m[4m[32md[24m[39m[0m[24m[39m [?1l>[?2004l
+]2;frontend]1;frontend[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/frontend]1;..ator/frontend]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/frontend\[0m[27m[24m[J[01;32m➜  [36mfrontend[00m [K[?1h=[?2004hc[1m[31mc[0m[39m[1m[31mc[0m[39m[38;2;88;91;112mlear[39m[0m[39m [39m [39m [39m [39m p[1m[31mp[0m[39m[1m[31mp[0m[39m[38;2;88;91;112mython3 ../../frontend/server.py[39m[31D[1m[31mp[1m[31my[0m[39m[1m[31mp[1m[31my[1m[31mt[0m[39m[1m[31mt[1m[31mh[0m[39m[1m[31mh[1m[31mo[0m[39m[1m[31mo[1m[31mn[0m[39m[0m[32mp[0m[32my[0m[32mt[0m[32mh[0m[32mo[0m[32mn[39m[32mn[32m3[39m[32m3[32m [39m[32m3[39m[39m [39ms[39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [39m [23D[4ms[24m[38;2;88;91;112merver.py[39m[8D[4ms[39m[4me[24m[4me[39m[4mr[39m[4mv[39m[4me[39m[4mr[39m[4m.[39m[4mp[39m[4my[24m[1m [0m[0m [?1l>[?2004l
+]2;python3 server.py]1;python3Serving at http://127.0.0.1:8000
+127.0.0.1 - - [22/Oct/2026 19:38:15] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:15] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:16] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:16] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:17] "GET /api/state HTTP/1.1" 200 -
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792672697.796857 2394444 gl_context.cc:369] GL version: 2.1 (2.1 Metal - 91.7), renderer: Apple M3
+127.0.0.1 - - [22/Oct/2026 19:38:17] "POST /api/inference HTTP/1.1" 200 -
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+127.0.0.1 - - [22/Oct/2026 19:38:17] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:17] "GET /video HTTP/1.1" 200 -
+W0000 00:00:1792672697.865832 2394468 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+127.0.0.1 - - [22/Oct/2026 19:38:17] "GET /api/state HTTP/1.1" 200 -
+W0000 00:00:1792672697.916177 2394468 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672697.919906 2394473 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672697.919925 2394470 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672697.920600 2394472 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672697.925102 2394472 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672697.925807 2394470 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792672697.928419 2394473 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+127.0.0.1 - - [22/Oct/2026 19:38:18] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:18] "GET /api/state HTTP/1.1" 200 -
+W0000 00:00:1792672699.285930 2394472 landmark_projection_calculator.cc:186] Using NORM_RECT without IMAGE_DIMENSIONS is only supported for the square ROI. Provide IMAGE_DIMENSIONS or use PROJECTION_MATRIX.
+127.0.0.1 - - [22/Oct/2026 19:38:19] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:19] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:20] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:20] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:21] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:21] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:22] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:22] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:23] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:24] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:24] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:25] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:25] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:26] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:26] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:27] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:27] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:28] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:28] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:29] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:29] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:30] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:30] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:31] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:31] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:32] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:32] "POST /api/smart HTTP/1.1" 409 -
+127.0.0.1 - - [22/Oct/2026 19:38:32] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:33] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:33] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:34] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:34] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:35] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:35] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:36] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:36] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:37] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:37] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:37] "POST /api/smart HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:37] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:38] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:38] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:39] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:39] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:40] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:40] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:41] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:41] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:42] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:42] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:43] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:43] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:44] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:44] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:45] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:45] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:46] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:46] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:47] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:47] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:48] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:48] "POST /api/inference HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:48] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:48] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:49] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:49] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:50] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:50] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:51] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:51] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:52] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:52] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:53] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:53] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:38:54] "GET /api/state HTTP/1.1" 200 -
+^CTraceback (most recent call last):
+  File "/Users/trungtran/Desktop/vsl-translator/frontend/server.py", line 123, in <module>
+    ThreadingHTTPServer(("127.0.0.1", 8000), Handler).serve_forever()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 235, in serve_forever
+    ready = selector.select(poll_interval)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/selectors.py", line 415, in select
+    fd_event_list = self._selector.poll(timeout)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/frontend]1;..ator/frontend]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/frontend\[0m[27m[24m[J[01;31m➜  [36mfrontend[00m [K[?1h=[?2004hpython3 server.py[17D[32mp[32my[32mt[32mh[32mo[32mn[32m3[39m [4ms[4me[4mr[4mv[4me[4mr[4m.[4mp[4my[24m[?1l>[?2004l
+]2;python3 server.py]1;python3Serving at http://127.0.0.1:8000
+127.0.0.1 - - [22/Oct/2026 19:50:42] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:42] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:43] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:43] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:44] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:44] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:45] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:45] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:46] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:46] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:47] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:47] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:48] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:48] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:49] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:49] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:50] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:50] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:51] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:51] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:52] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:52] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:53] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:53] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:54] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:54] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:55] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:55] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:56] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:56] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:57] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:57] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:58] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:58] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:59] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:50:59] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:00] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:00] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:01] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:01] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:02] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:02] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:03] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:03] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:04] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:04] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:05] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:05] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:06] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:06] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:07] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:07] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:08] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:08] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:09] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:09] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:10] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:10] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:11] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:11] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:12] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:12] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:13] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:13] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:14] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:14] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:15] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:15] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:16] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:16] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:17] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:17] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:18] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:18] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:19] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:19] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:20] "GET /api/state HTTP/1.1" 200 -
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792673480.733573 2403388 gl_context.cc:369] GL version: 2.1 (2.1 Metal - 91.7), renderer: Apple M3
+127.0.0.1 - - [22/Oct/2026 19:51:20] "POST /api/inference HTTP/1.1" 200 -
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+127.0.0.1 - - [22/Oct/2026 19:51:20] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:20] "GET /video HTTP/1.1" 409 -
+127.0.0.1 - - [22/Oct/2026 19:51:20] "GET /api/state HTTP/1.1" 200 -
+W0000 00:00:1792673480.812602 2403413 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673480.870756 2403413 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673480.874053 2403410 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673480.874247 2403415 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673480.874928 2403411 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673480.878754 2403410 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673480.883560 2403411 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673480.884412 2403408 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+127.0.0.1 - - [22/Oct/2026 19:51:21] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:21] "GET /api/state HTTP/1.1" 200 -
+W0000 00:00:1792673482.218094 2403411 landmark_projection_calculator.cc:186] Using NORM_RECT without IMAGE_DIMENSIONS is only supported for the square ROI. Provide IMAGE_DIMENSIONS or use PROJECTION_MATRIX.
+127.0.0.1 - - [22/Oct/2026 19:51:22] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:22] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:23] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:23] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:24] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:24] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:25] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:25] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:26] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:26] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:27] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:27] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:28] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:28] "POST /api/inference HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:28] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:28] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:29] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:29] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:30] "POST /api/inference HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:30] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:30] "GET /video HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:30] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:30] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:31] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:31] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:32] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:32] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:33] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:33] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:34] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:34] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:35] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:35] "POST /api/inference HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:35] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:35] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:36] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:36] "GET /api/state HTTP/1.1" 200 -
+^CTraceback (most recent call last):
+  File "/Users/trungtran/Desktop/vsl-translator/frontend/server.py", line 130, in <module>
+    ThreadingHTTPServer(("127.0.0.1", 8000), Handler).serve_forever()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 235, in serve_forever
+    ready = selector.select(poll_interval)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/selectors.py", line 415, in select
+    fd_event_list = self._selector.poll(timeout)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/frontend]1;..ator/frontend]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/frontend\[0m[27m[24m[J[01;31m➜  [36mfrontend[00m [K[?1h=[?2004hpython3 server.py[17D[32mp[32my[32mt[32mh[32mo[32mn[32m3[39m [4ms[4me[4mr[4mv[4me[4mr[4m.[4mp[4my[24m[?1l>[?2004l
+]2;python3 server.py]1;python3Serving at http://127.0.0.1:8000
+127.0.0.1 - - [22/Oct/2026 19:51:55] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:55] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:56] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:56] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:57] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:57] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:58] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:58] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:59] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:51:59] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:00] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:00] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:01] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:01] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:02] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:02] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:03] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:03] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:04] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:04] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:05] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:05] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:06] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:06] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:07] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:07] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:08] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:08] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:09] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:09] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:10] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:10] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:11] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:11] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:12] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:12] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:13] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:13] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:14] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:14] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:15] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:15] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:16] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:16] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:17] "GET /api/state HTTP/1.1" 200 -
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1792673537.710406 2404883 gl_context.cc:369] GL version: 2.1 (2.1 Metal - 91.7), renderer: Apple M3
+127.0.0.1 - - [22/Oct/2026 19:52:17] "POST /api/inference HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:17] "GET /api/state HTTP/1.1" 200 -
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+W0000 00:00:1792673537.770975 2404904 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673537.805225 2404908 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673537.807757 2404908 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673537.807758 2404909 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673537.807943 2404907 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673537.812499 2404907 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1792673537.812884 2404908 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+127.0.0.1 - - [22/Oct/2026 19:52:17] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:17] "GET /video HTTP/1.1" 200 -
+W0000 00:00:1792673537.815725 2404906 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+127.0.0.1 - - [22/Oct/2026 19:52:18] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:18] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:19] "GET /api/state HTTP/1.1" 200 -
+W0000 00:00:1792673539.227059 2404908 landmark_projection_calculator.cc:186] Using NORM_RECT without IMAGE_DIMENSIONS is only supported for the square ROI. Provide IMAGE_DIMENSIONS or use PROJECTION_MATRIX.
+127.0.0.1 - - [22/Oct/2026 19:52:19] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:20] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:20] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:21] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:21] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:22] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:22] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:23] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:23] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:24] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:24] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:25] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:25] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:26] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:26] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:27] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:27] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:28] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:28] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:29] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:29] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:30] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:30] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:31] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:31] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:32] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:32] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:33] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:33] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:34] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:34] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:35] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:35] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:36] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:36] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:37] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:37] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:38] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:38] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:39] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:39] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:40] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:40] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:41] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:41] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:42] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:42] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:43] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:43] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:44] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:44] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:45] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:45] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:46] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:46] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:47] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:47] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:48] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:48] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:49] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:49] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:50] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:51] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:51] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:52] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:52] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:53] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:53] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:54] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:54] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:55] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:55] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:56] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:56] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:57] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:57] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:58] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:58] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:59] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:52:59] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:00] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:00] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:01] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:01] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:02] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:02] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:03] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:03] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:04] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:04] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:05] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:05] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:06] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:06] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:07] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:07] "POST /api/smart HTTP/1.1" 409 -
+127.0.0.1 - - [22/Oct/2026 19:53:07] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:08] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:08] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:09] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:09] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:10] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:10] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:11] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:11] "POST /api/inference HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:11] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:11] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:12] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:12] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:13] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:13] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:14] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:14] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:15] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:15] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:16] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:16] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:17] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:17] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:18] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:18] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:19] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:19] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:20] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:20] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:21] "GET /api/state HTTP/1.1" 200 -
+127.0.0.1 - - [22/Oct/2026 19:53:21] "GET /api/state HTTP/1.1" 200 -
+^CTraceback (most recent call last):
+  File "/Users/trungtran/Desktop/vsl-translator/frontend/server.py", line 123, in <module>
+    ThreadingHTTPServer(("127.0.0.1", 8000), Handler).serve_forever()
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/socketserver.py", line 235, in serve_forever
+    ready = selector.select(poll_interval)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.12/3.12.15/Frameworks/Python.framework/Versions/3.12/lib/python3.12/selectors.py", line 415, in select
+    fd_event_list = self._selector.poll(timeout)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/frontend]1;..ator/frontend]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/frontend\[0m[27m[24m[J[01;31m➜  [36mfrontend[00m [K[?1h=[?2004hc[1m[31mc[0m[39m[1m[31mc[0m[39m[38;2;88;91;112mlear[39m[1m[31mc[1m[31ml[0m[39m[1m[31mc[1m[31ml[1m[31me[0m[39m[1m[31me[1m[31ma[0m[39m[1m[31ma[1m[31mr[0m[39m[0m[32mc[0m[32ml[0m[32me[0m[32ma[0m[32mr[39m[?1l>[?2004l
+]2;clear]1;clear[3J[H[2J[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/frontend]1;..ator/frontend]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/frontend\[0m[27m[24m[J[01;32m➜  [36mfrontend[00m [K[?1h=[?2004hg[32mg[39m[32mg[39m[38;2;88;91;112mit commit -m "first"[39m[20D[32mg[32mi[39m[1m[31mg[1m[31mi[0m[39m[1m[31mg[1m[31mi[1m[31mt[0m[39m[0m[32mg[0m[32mi[0m[32mt[39m[32mt[32m [39m[32mt[39m[39m [39mc[39mo[39mm[39mm[39mi[39mt[39m [39m-[39mm[39m [39m"[39mf[39mi[39mr[39ms[39mt[39m"[33m"[33mf[33mi[33mr[33ms[33mt[33m"[39m[33m1[33m"[39m[?1l>[?2004l
+]2;git commit -m "first1"]1;gitfatal: not a git repository (or any of the parent directories): .git
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator/frontend]1;..ator/frontend]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator/frontend\[0m[27m[24m[J[01;31m➜  [36mfrontend[00m [K[?1h=[?2004h.[32m.[39m[32m.[39m[38;2;88;91;112m.[39m[32m.[32m.[39m[4m[32m.[4m[32m.[24m[39m[?1l>[?2004l
+]2;..]1;..[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator]1;..sl-translator]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator\[0m[27m[24m[J[01;32m➜  [36mvsl-translator[00m [K[?1h=[?2004h..[4m[32m.[4m[32m.[24m[39m[4m[32mg[4m[32mi[24m[39mt commit -m "first1"[22D[24m[32mg[24m[32mi[32mt[39m[11C[33m"[33mf[33mi[33mr[33ms[33mt[33m1[33m"[39m[?1l>[?2004l
+]2;git commit -m "first1"]1;gitfatal: not a git repository (or any of the parent directories): .git
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator]1;..sl-translator]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator\[0m[27m[24m[J[01;31m➜  [36mvsl-translator[00m [K[?1h=[?2004hl[32ml[39m[32ml[39m[38;2;88;91;112ms[39m[32ml[32ms[39m[32ml[32ms[32m [39m[32ml[32ms[39m[39m [38;2;88;91;112m-a[39m[39m-[39ma[?1l>[?2004l
+]2;ls -G -a]1;ls[1m[36m.[39;49m[0m            [1m[36m..[39;49m[0m           .DS_Store    [1m[36m.claude[39;49m[0m      .gitignore   README.md    [1m[36mbackend[39;49m[0m      [1m[36mfrontend[39;49m[0m     [1m[36mgraphify-out[39;49m[0m [1m[36mvenv[39;49m[0m
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator]1;..sl-translator]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator\[0m[27m[24m[J[01;32m➜  [36mvsl-translator[00m [K[?1h=[?2004hc[1m[31mc[0m[39m[1m[31mc[0m[39m[38;2;88;91;112mlear[39m[1m[31mc[1m[31ml[0m[39m[1m[31mc[1m[31ml[1m[31me[0m[39m[1m[31me[1m[31ma[0m[39m[1m[31ma[1m[31mr[0m[39m[0m[32mc[0m[32ml[0m[32me[0m[32ma[0m[32mr[39m[?1l>[?2004l
+]2;clear]1;clear[3J[H[2J[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator]1;..sl-translator]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator\[0m[27m[24m[J[01;32m➜  [36mvsl-translator[00m [K[?1h=[?2004hl[32ml[39m[32ml[39m[38;2;88;91;112ms -a[39m[32ml[32ms[39m[32ml[32ms[32m [39m[32ml[32ms[39m[39m [39m-[39ma[?1l>[?2004l
+]2;ls -G -a]1;ls[1m[36m.[39;49m[0m            [1m[36m..[39;49m[0m           .DS_Store    [1m[36m.claude[39;49m[0m      .gitignore   README.md    [1m[36mbackend[39;49m[0m      [1m[36mfrontend[39;49m[0m     [1m[36mgraphify-out[39;49m[0m [1m[36mvenv[39;49m[0m
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator]1;..sl-translator]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator\[0m[27m[24m[J[01;32m➜  [36mvsl-translator[00m [K[?1h=[?2004hc[1m[31mc[0m[39m[1m[31mc[0m[39m[38;2;88;91;112mlear[39m[1m[31mc[1m[31ml[0m[39m[1m[31mc[1m[31ml[1m[31me[0m[39m[1m[31me[1m[31ma[0m[39m[1m[31ma[1m[31mr[0m[39m[0m[32mc[0m[32ml[0m[32me[0m[32ma[0m[32mr[39m[?1l>[?2004l
+]2;clear]1;clear[3J[H[2J[1m[7m%[27m[1m[0m                                                                                                                                                                                                ]2;trungtran@Trungs-MacBook-Air:~/Desktop/vsl-translator]1;..sl-translator]7;file://Trungs-MacBook-Air.local/Users/trungtran/Desktop/vsl-translator\[0m[27m[24m[J[01;32m➜  [36mvsl-translator[00m [K[?1h=[?2004h

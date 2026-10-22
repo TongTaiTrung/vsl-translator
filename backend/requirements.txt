@@ -1,0 +1,5 @@
+tensorflow==2.18.1
+opencv-python
+mediapipe==0.10.21
+scikit-learn
+openai
