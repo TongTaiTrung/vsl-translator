@@ -86,3 +86,6 @@ $RECYCLE.BIN/
 *.log
 *.tmp
 *.bak
+
+# Chứng chỉ tự ký cho camera trên điện thoại (HTTPS LAN)
+frontend/certs/

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VSL-Translator</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    <h1>VSL-Translator</h1>
+    <div class="row">
+        <button id="startBtn">Bắt đầu nhận diện</button>
+        <button id="stopBtn">Dừng</button>
+        <label><input type="checkbox" id="debugChk"> Debug landmark</label>
+    </div>
+    <div id="stage">
+        <video id="camera" autoplay playsinline muted></video>
+        <img id="debugFrame" alt="">
+    </div>
+    <p id="streamHint">Camera đang tắt. Bấm "Bắt đầu nhận diện" để mở camera trên thiết bị này.</p>
+    <p>Status: <span id="status">...</span> | Buffer: <span id="buffer">...</span></p>
+    <p>Dự đoán: <span id="pred">...</span></p>
+    <p>Câu:</p>
+    <div id="sentence"></div>
+    <p>Câu smart (Groq <span id="groqModel">...</span>):</p>
+    <div id="smart"></div>
+    <div class="row">
+        <button id="smartRetryBtn">Thử lại smart</button>
+        <button id="speakSmartBtn">Đọc câu smart</button>
+    </div>
+    <div class="row">
+        <button id="backspaceBtn">Xóa từ cuối</button>
+        <button id="clearBtn">Xóa cả câu</button>
+        <button id="speakSentenceBtn">Đọc câu</button>
+    </div>
+    
+    <hr>
+    <h2>Cài đặt</h2>
+    <p>Groq API key: <span id="groqStatus">...</span></p>
+    <div class="row">
+        <input type="password" id="groqKey" placeholder="gsk_..." size="40" autocomplete="off" />
+        <button id="saveKeyBtn">Lưu key</button>
+    </div>
+    <hr>
+    <h2>Ngôn ngữ ký hiệu</h2>
+    <div class="row">
+        <input type="text" id="signInput" placeholder="Nhập câu tiếng Việt..." size="50" autocomplete="off" />
+        <button id="signConvertBtn">Chuyển đổi</button>
+        <button id="speakInputBtn">Đọc</button>
+        <button id="micBtn">Mic</button>
+        <span id="micStatus"></span>
+        <button id="signFillBtn">Lấy từ câu nhận diện</button>
+    </div>
+    <p id="signCaption"></p>
+    <div id="signGrid" class="sign-grid"></div>
+
+    <p id="keyMsg"></p>
+
+    <script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

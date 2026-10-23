@@ -12,11 +12,17 @@ by one uniform factor, mimicking the same gesture performed closer/farther
 from the camera. This is a uniform scale, NOT the same as the per-frame
 Gaussian _scale_jitter() used in training augmentation (dataset.py).
 
+Mirror (--mirror): horizontal flip so a left-hand gesture becomes the same
+gesture on the right hand and vice versa. Unlike dataset._random_hand_swap
+(hand-slot permutation only, and skipped for one-hand samples), this also
+flips pose x and hand chirality, and it does mirror one-sided sequences.
+
 Usage:
     venv/bin/python scripts/add_noise.py --action hello --copies 1 --noise-std 0.02
     venv/bin/python scripts/add_noise.py --action hello --copies 2 --scale-range 0.7 1.4 --seed 42
     venv/bin/python scripts/add_noise.py --action hello --copies 1 --noise-zeros --noise-std 0.05 --seed 42
     venv/bin/python scripts/add_noise.py --all-actions --copies 2 --scale-range 0.7 1.4 --seed 42
+    venv/bin/python scripts/add_noise.py --action hello --copies 1 --noise-std 0 --mirror
 """
 
 import sys, os
@@ -71,6 +77,83 @@ def apply_distance_scale(vec, factor):
     return out
 
 
+def _negate_pose_x(block):
+    """Negate x in (x, y, visibility) triples. y and visibility stay."""
+    out = np.array(block, copy=True)
+    out[..., 0::3] *= -1
+    return out
+
+
+def _negate_pair_x(block):
+    """Negate x in (x, y) pairs. y stays; exact zeros stay zero."""
+    out = np.array(block, copy=True)
+    out[..., 0::2] *= -1
+    return out
+
+
+def _mirror_sh_block(block):
+    """Remap one hand's shoulder-offset block across a horizontal flip.
+
+    Layout is [to_ls, to_rs, to_mid], 42 dims each. The hand lands on the
+    opposite side, so the two shoulder anchors swap and every offset x flips.
+    """
+    ref = block.shape[-1] // 3
+    to_ls = block[..., 0:ref]
+    to_rs = block[..., ref:ref * 2]
+    to_mid = block[..., ref * 2:ref * 3]
+    return np.concatenate([
+        _negate_pair_x(to_rs),
+        _negate_pair_x(to_ls),
+        _negate_pair_x(to_mid),
+    ], axis=-1)
+
+
+def mirror_lr(vec):
+    """Mirror one landmark vector left↔right (horizontal flip).
+
+    Layout: pose [0:18] | lh [18:60] | rh [60:102] | arm_depths [102:104]
+    | sh_off_lh [104:230] | sh_off_rh [230:356].
+
+    Sides swap. Pose and hand x flip so canonical shoulders stay pinned at
+    ∓0.5 and the hand shape has the opposite chirality. y, visibility and
+    depth ratios are not negated. A one-sided sequence moves to the other
+    hand; applying twice restores the original.
+    """
+    from vsl_translator.landmarks import (
+        POSE_DIM, HAND_DIM, ARM_DEPTH_DIM, SH_OFF_REF_DIM,
+    )
+    src = np.asarray(vec)
+    out = src.copy()
+    n = src.shape[-1]
+    if n < POSE_DIM:
+        return out
+
+    out[..., 0:9] = _negate_pose_x(src[..., 9:18])
+    out[..., 9:18] = _negate_pose_x(src[..., 0:9])
+
+    hand_end = POSE_DIM + HAND_DIM * 2
+    if n < hand_end:
+        return out
+    lh = slice(POSE_DIM, POSE_DIM + HAND_DIM)
+    rh = slice(POSE_DIM + HAND_DIM, hand_end)
+    out[..., lh] = _negate_pair_x(src[..., rh])
+    out[..., rh] = _negate_pair_x(src[..., lh])
+
+    depth_at = hand_end
+    if n >= depth_at + ARM_DEPTH_DIM:
+        d = src[..., depth_at:depth_at + ARM_DEPTH_DIM]
+        out[..., depth_at:depth_at + ARM_DEPTH_DIM] = d[..., ::-1]
+
+    sh_start = depth_at + ARM_DEPTH_DIM
+    sh = SH_OFF_REF_DIM
+    if n >= sh_start + sh * 2:
+        sL = src[..., sh_start:sh_start + sh]
+        sR = src[..., sh_start + sh:sh_start + sh * 2]
+        out[..., sh_start:sh_start + sh] = _mirror_sh_block(sR)
+        out[..., sh_start + sh:sh_start + sh * 2] = _mirror_sh_block(sL)
+    return out
+
+
 def sorted_frame_files(seq_dir):
     files = [f for f in os.listdir(seq_dir) if f.endswith('.npy')]
     def key(f):
@@ -97,6 +180,10 @@ def main():
                         metavar=("LOW", "HIGH"),
                         help="Per-copy uniform distance factor range, e.g. --scale-range 0.7 1.4 "
                              "(each copy scaled by one uniform(LOW, HIGH) factor before noise).")
+    parser.add_argument("--mirror", action="store_true", default=False,
+                        help="Mirror each copy left↔right before noise/scale: pose, both "
+                             "hands, arm depth and shoulder offsets swap sides, and x flips "
+                             "so a left-hand gesture becomes the right-hand one (and vice versa).")
     parser.add_argument("--src-seqs", type=int, nargs="*", default=None,
                         help="Source sequence ids (default: all numeric seqs)")
     parser.add_argument("--seed", type=int, default=None,
@@ -117,6 +204,8 @@ def main():
         if lo < 0.5 or hi > 2.0:
             print(f"WARNING: wide --scale-range {args.scale_range} may create "
                   f"unrealistic offsets; recommended 0.7 1.4.")
+    if args.mirror:
+        print("Mirror: each copy is flipped left↔right (pose, hands, arm depth, shoulder offsets).")
 
     actions = list(cfg.ACTIONS) if args.all_actions else [args.action]
     if args.all_actions and args.src_seqs is not None:
@@ -164,11 +253,18 @@ def _process_action(action, args):
                 factor = float(np.random.uniform(args.scale_range[0], args.scale_range[1]))
             for f in frames:
                 vec = np.load(os.path.join(src_dir, f))
+                if args.mirror:
+                    vec = mirror_lr(vec)
                 if factor is not None:
                     vec = apply_distance_scale(vec, factor)
                 np.save(os.path.join(dst_dir, f), add_noise(vec, args.noise_std,
                                                             noise_zeros=args.noise_zeros))
-            tag = f" [x{factor:.2f}]" if factor is not None else ""
+            tags = []
+            if args.mirror:
+                tags.append("mirror")
+            if factor is not None:
+                tags.append(f"x{factor:.2f}")
+            tag = f" [{', '.join(tags)}]" if tags else ""
             print(f"  {action}/{src} ({len(frames)} frames) → {action}/{next_idx}{tag}")
             next_idx += 1
             created += 1

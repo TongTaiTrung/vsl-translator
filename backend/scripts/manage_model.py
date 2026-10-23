@@ -122,6 +122,9 @@ def cmd_restore(args):
             stats = os.path.join(cfg.MODELS_DIR, "feature_stats.npz")
             if os.path.exists(stats):
                 shutil.copy2(stats, os.path.join(pre_restore, "feature_stats.npz"))
+            record = os.path.join(cfg.MODELS_DIR, cfg.TRAIN_RECORD_FILENAME)
+            if os.path.exists(record):
+                shutil.copy2(record, os.path.join(pre_restore, cfg.TRAIN_RECORD_FILENAME))
             print(f"  💾 Model hiện tại đã backup → {os.path.basename(pre_restore)}")
 
     # Restore files

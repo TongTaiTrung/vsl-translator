@@ -21,16 +21,21 @@ Training pipeline (strictly anti-data leakage):
   8. Final evaluation: val report is a tuning signal only (optimistic because
      the checkpoint was selected on val); the held-out test accuracy +
      confusion matrix is the headline result.
+  9. Write models/train_record.json beside the checkpoint (hyperparameters,
+     per-epoch history, final metrics). The next backup copies that file
+     with the model, so each saved model keeps the run that produced it.
 """
 
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+import json
 import shutil
 import glob
 from datetime import datetime
 
+import keras
 from keras.callbacks import TensorBoard, ModelCheckpoint
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
@@ -81,13 +86,21 @@ def _backup_old_model():
     if os.path.exists(stats_path):
         shutil.copy2(stats_path, os.path.join(backup_path, "feature_stats.npz"))
 
+    # Copy the train record so this backup keeps the run that produced the model
+    record_name = cfg.TRAIN_RECORD_FILENAME
+    record_src = os.path.join(cfg.MODELS_DIR, record_name)
+    copied_record = os.path.exists(record_src)
+    if copied_record:
+        shutil.copy2(record_src, os.path.join(backup_path, record_name))
+
     # Save metadata
     meta = {
         "timestamp": timestamp,
         "model_file": cfg.MODEL_FILENAME,
         "actions": list(cfg.ACTIONS),
     }
-    import json
+    if copied_record:
+        meta["train_record"] = record_name
     with open(os.path.join(backup_path, "backup_info.json"), "w") as f:
         json.dump(meta, f, indent=2, ensure_ascii=False)
 
@@ -151,6 +164,156 @@ def _print_confusion_matrix(y_true, y_pred, labels):
         row += f"  │ {row_acc:.0%}"
         print(row)
     print()
+
+
+def _jsonify(obj):
+    """Convert numpy values so the train record can be dumped as JSON."""
+    if isinstance(obj, dict):
+        return {str(k): _jsonify(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_jsonify(v) for v in obj]
+    if isinstance(obj, np.ndarray):
+        return _jsonify(obj.tolist())
+    if isinstance(obj, np.floating):
+        return float(obj)
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.bool_):
+        return bool(obj)
+    return obj
+
+
+def _training_hyperparams():
+    """Snapshot of the config values that define this training run."""
+    return {
+        "sequence_len": cfg.SEQUENCE_LEN,
+        "val_split": cfg.VAL_SPLIT,
+        "test_split": cfg.TEST_SPLIT,
+        "random_seed": cfg.RANDOM_SEED,
+        "epochs": cfg.EPOCHS,
+        "batch_size": cfg.BATCH_SIZE,
+        "augment_factor": cfg.AUGMENT_FACTOR,
+        "noise_std": cfg.NOISE_STD,
+        "scale_jitter_std": cfg.SCALE_JITTER_STD,
+        "time_warp_sigma": cfg.TIME_WARP_SIGMA,
+        "shift_range": list(cfg.SHIFT_RANGE),
+        "frame_drop_prob": cfg.FRAME_DROP_PROB,
+        "hand_dropout_prob": cfg.HAND_DROPOUT_PROB,
+        "hand_swap_prob": cfg.HAND_SWAP_PROB,
+        "inactive_inject_prob": cfg.INACTIVE_INJECT_PROB,
+        "inactive_wrist_y_range": list(cfg.INACTIVE_WRIST_Y_RANGE),
+        "inactive_drift_std": cfg.INACTIVE_DRIFT_STD,
+        "lr_initial": cfg.LR_INITIAL,
+        "lr_min": cfg.LR_MIN,
+        "lr_warmup_epochs": cfg.LR_WARMUP_EPOCHS,
+        "focal_alpha": cfg.FOCAL_ALPHA,
+        "focal_gamma": cfg.FOCAL_GAMMA,
+        "label_smoothing": cfg.LABEL_SMOOTHING,
+        "es_patience": cfg.ES_PATIENCE,
+        "es_min_delta": cfg.ES_MIN_DELTA,
+        "es_start_epoch": cfg.ES_START_EPOCH,
+        "overfit_gap_threshold": cfg.OVERFIT_GAP_THRESHOLD,
+        "target_val_acc": cfg.TARGET_VAL_ACC,
+        "target_val_loss": cfg.TARGET_VAL_LOSS,
+        "es_loss_spike_patience": cfg.ES_LOSS_SPIKE_PATIENCE,
+        "es_plateau_patience": cfg.ES_PLATEAU_PATIENCE,
+        "es_plateau_min_delta": cfg.ES_PLATEAU_MIN_DELTA,
+        "overfit_patience": cfg.OVERFIT_PATIENCE,
+    }
+
+
+def _build_train_record(
+    *, monitor, stopper, class_weights, actual_epochs, n_params, batch_size,
+    n_train_raw, n_train_aug, n_val, n_test, seq_len, n_features,
+    train_aug_loss, train_aug_acc, train_loss, train_acc,
+    val_loss, val_acc, test_loss, test_acc,
+    y_val_true, y_val_pred, y_test_true, y_test_pred, val_max_probs,
+):
+    """Hyperparameters, per-epoch history, and final metrics for this model."""
+    actions = [str(a) for a in cfg.ACTIONS]
+    label_ids = list(range(len(actions)))
+    named_weights = {}
+    for cls, w in class_weights.items():
+        idx = int(cls)
+        name = actions[idx] if idx < len(actions) else f"class_{idx}"
+        named_weights[name] = float(w)
+    h = monitor.history
+    best_loss = float(monitor.best_val_loss)
+    return {
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
+        "keras_version": keras.__version__,
+        "model_file": cfg.MODEL_FILENAME,
+        "evaluated_weights": "best val_loss checkpoint",
+        "actions": actions,
+        "n_params": int(n_params),
+        "dataset": {
+            "train_raw": int(n_train_raw),
+            "train_augmented": int(n_train_aug),
+            "val": int(n_val),
+            "test": int(n_test),
+            "sequence_len": int(seq_len),
+            "n_features": int(n_features),
+            "batch_size": int(batch_size),
+        },
+        "class_weights": named_weights,
+        "hyperparameters": _training_hyperparams(),
+        "training": {
+            "epochs_ran": int(actual_epochs),
+            "epochs_max": int(cfg.EPOCHS),
+            "stop_reason": stopper.stop_reason or "Chạy hết số epoch",
+            "best_val_loss": best_loss if np.isfinite(best_loss) else None,
+            "best_val_loss_epoch": int(monitor.best_val_loss_epoch),
+            "best_val_acc": float(monitor.best_val_acc),
+            "best_val_acc_epoch": int(monitor.best_val_acc_epoch),
+        },
+        "history": {
+            "epoch": list(range(1, len(h["loss"]) + 1)),
+            "loss": h["loss"],
+            "acc": h["acc"],
+            "val_loss": h["val_loss"],
+            "val_acc": h["val_acc"],
+            "lr": h["lr"],
+            "overfit_gap": h["overfit_gap"],
+        },
+        "final": {
+            "train_aug_loss": float(train_aug_loss),
+            "train_aug_acc": float(train_aug_acc),
+            "train_loss": float(train_loss),
+            "train_acc": float(train_acc),
+            "val_loss": float(val_loss),
+            "val_acc": float(val_acc),
+            "test_loss": float(test_loss),
+            "test_acc": float(test_acc),
+            "gap_clean_train_minus_val": float(train_acc - val_acc),
+            "val_confidence": {
+                "mean": float(np.mean(val_max_probs)),
+                "min": float(np.min(val_max_probs)),
+                "max": float(np.max(val_max_probs)),
+                "below_0_7": int(np.sum(np.asarray(val_max_probs) < 0.7)),
+            },
+        },
+        "val_report": classification_report(
+            y_val_true, y_val_pred, labels=label_ids, target_names=actions,
+            output_dict=True, zero_division=0,
+        ),
+        "test_report": classification_report(
+            y_test_true, y_test_pred, labels=label_ids, target_names=actions,
+            output_dict=True, zero_division=0,
+        ),
+        "val_confusion": confusion_matrix(y_val_true, y_val_pred, labels=label_ids),
+        "test_confusion": confusion_matrix(y_test_true, y_test_pred, labels=label_ids),
+    }
+
+
+def _save_train_record(**kwargs):
+    """Write models/train_record.json for the checkpoint just trained."""
+    record = _jsonify(_build_train_record(**kwargs))
+    path = os.path.join(cfg.MODELS_DIR, cfg.TRAIN_RECORD_FILENAME)
+    os.makedirs(cfg.MODELS_DIR, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(record, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    return path
 
 
 def main():
@@ -228,6 +391,21 @@ def main():
     print(f"  Overfitting gap threshold: {cfg.OVERFIT_GAP_THRESHOLD}")
 
     # ── Callbacks ────────────────────────────────────────────────────────────
+    monitor = TrainingMonitor(
+        overfit_gap_threshold=cfg.OVERFIT_GAP_THRESHOLD,
+    )
+    stopper = SmartEarlyStopping(
+        patience=cfg.ES_PATIENCE,
+        min_delta=cfg.ES_MIN_DELTA,
+        target_acc=cfg.TARGET_VAL_ACC,
+        target_loss=cfg.TARGET_VAL_LOSS,
+        overfit_gap_threshold=cfg.OVERFIT_GAP_THRESHOLD,
+        overfit_patience=cfg.OVERFIT_PATIENCE,
+        start_from_epoch=cfg.ES_START_EPOCH,
+        loss_spike_patience=cfg.ES_LOSS_SPIKE_PATIENCE,
+        plateau_patience=cfg.ES_PLATEAU_PATIENCE,
+        plateau_min_delta=cfg.ES_PLATEAU_MIN_DELTA,
+    )
     callbacks = [
         # 1. LR Schedule: warmup + cosine annealing (sole LR controller)
         CosineAnnealingWarmup(
@@ -238,23 +416,10 @@ def main():
         ),
 
         # 2. Per-epoch monitoring dashboard
-        TrainingMonitor(
-            overfit_gap_threshold=cfg.OVERFIT_GAP_THRESHOLD,
-        ),
+        monitor,
 
         # 3. Smart multi-criteria early stopping (starts after warmup)
-        SmartEarlyStopping(
-            patience=cfg.ES_PATIENCE,
-            min_delta=cfg.ES_MIN_DELTA,
-            target_acc=cfg.TARGET_VAL_ACC,
-            target_loss=cfg.TARGET_VAL_LOSS,
-            overfit_gap_threshold=cfg.OVERFIT_GAP_THRESHOLD,
-            overfit_patience=cfg.OVERFIT_PATIENCE,
-            start_from_epoch=cfg.ES_START_EPOCH,
-            loss_spike_patience=cfg.ES_LOSS_SPIKE_PATIENCE,
-            plateau_patience=cfg.ES_PLATEAU_PATIENCE,
-            plateau_min_delta=cfg.ES_PLATEAU_MIN_DELTA,
-        ),
+        stopper,
 
         # 4. Save best model by val_loss
         ModelCheckpoint(
@@ -350,7 +515,36 @@ def main():
     if low_conf > 0:
         print(f"    ⚠️  {low_conf} predictions có confidence < 70%")
 
+    record_path = _save_train_record(
+        monitor=monitor,
+        stopper=stopper,
+        class_weights=class_weights,
+        actual_epochs=actual_epochs,
+        n_params=total_params,
+        batch_size=batch_size,
+        n_train_raw=len(X_train_raw),
+        n_train_aug=n_train,
+        n_val=n_val,
+        n_test=len(X_test_raw),
+        seq_len=X_train.shape[1],
+        n_features=X_train.shape[2],
+        train_aug_loss=train_aug_loss,
+        train_aug_acc=train_aug_acc,
+        train_loss=train_loss,
+        train_acc=train_acc,
+        val_loss=val_loss,
+        val_acc=val_acc,
+        test_loss=test_loss,
+        test_acc=test_acc,
+        y_val_true=y_true_labels,
+        y_val_pred=y_pred_labels,
+        y_test_true=y_test_true,
+        y_test_pred=y_test_pred,
+        val_max_probs=max_probs,
+    )
+
     print(f"\n  ✅ Model saved: {model_path}")
+    print(f"  ✅ Train record: {record_path}")
     print("=" * 60)
 
 

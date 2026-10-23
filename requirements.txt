@@ -3,3 +3,6 @@ opencv-python
 mediapipe==0.10.21
 scikit-learn
 openai
+gtts==2.5.4
+SpeechRecognition==3.17.0
+PyAudio==0.2.14

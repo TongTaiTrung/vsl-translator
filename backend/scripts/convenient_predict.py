@@ -30,7 +30,6 @@ import config as cfg
 _MODEL = None
 _FEAT_MEAN = None
 _FEAT_STD = None
-_PROMPT_TEMPLATE = None
 
 
 def _ensure_model():
@@ -51,14 +50,6 @@ def _ensure_model():
     else:
         _FEAT_MEAN, _FEAT_STD = None, None
     return _MODEL, _FEAT_MEAN, _FEAT_STD
-
-
-def _ensure_prompt_template():
-    global _PROMPT_TEMPLATE
-    if _PROMPT_TEMPLATE is None:
-        from scripts.realtime_predict import _load_prompt_template
-        _PROMPT_TEMPLATE = _load_prompt_template()
-    return _PROMPT_TEMPLATE
 
 
 def predict_raw(frames):
@@ -117,18 +108,8 @@ def predict_raw(frames):
 
 def predict_smart(raw_word):
     """Clean one raw word via Groq. Returns cleaned text ("" on empty/error)."""
-    if not raw_word:
-        return ""
-    import os as _os
-    from scripts.realtime_predict import _call_groq
-    api_key = _os.environ.get("GROQ_API_KEY", "")
-    if not api_key:
-        return ""
-    try:
-        template = _ensure_prompt_template()
-        return _call_groq(raw_word, template, api_key).strip()
-    except Exception:
-        return ""
+    from scripts.groq_client import predict_smart as _predict_smart
+    return _predict_smart(raw_word)
 
 
 def convenient_predict(frames):

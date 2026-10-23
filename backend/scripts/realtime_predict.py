@@ -23,7 +23,6 @@ Keys (OpenCV window must have focus):
 
 import sys, os
 import threading
-import time
 from collections import deque
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -32,336 +31,45 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 import cv2
 import numpy as np
 from keras.models import load_model
-from PIL import Image, ImageDraw, ImageFont
 
 import config as cfg
+from scripts.overlay import (
+    SENTENCE_MAX_LINES,
+    draw_confidence_bars,
+    draw_sentence,
+    draw_sentence_smart,
+    put_text_unicode,
+    text_height,
+    text_width,
+)
 from vsl_translator.landmarks import (
     create_model, detect, draw_landmarks_new, extract, feed_calibrator,
     ArmDepthCalibrator, ArmDepthSmoother,
 )
 from vsl_translator.dataset import standardize_features
 
-# Max overlay lines for the sentence box at the bottom of the video.
-SENTENCE_MAX_LINES = 3
+# Overlay drawing lives in scripts/overlay.py (re-exported above for
+# backward compatibility: `from scripts.realtime_predict import draw_sentence`).
+from scripts import overlay as _overlay
 
-# ── Unicode text rendering (Pillow + TrueType) ──────────────────────────────
-# cv2.putText only supports ASCII Hershey fonts, so Vietnamese diacritics
-# break. Render text via Pillow instead; OpenCV still draws boxes/video.
-FONT_PATH = "/Library/Fonts/Arial Unicode.ttf"
-FONT_SIZE = 22
-_FONT_CACHE = {}
-
-
-def _get_font(size=FONT_SIZE):
-    if size not in _FONT_CACHE:
-        _FONT_CACHE[size] = ImageFont.truetype(FONT_PATH, size)
-    return _FONT_CACHE[size]
-
-
-def put_text_unicode(img, text, org, color=(255, 255, 255), size=FONT_SIZE):
-    """Draw UTF-8 text (BGR color) onto a BGR OpenCV frame. Returns img."""
-    rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    pil = Image.fromarray(rgb)
-    draw = ImageDraw.Draw(pil)
-    b, g, r = color
-    draw.text(org, text, font=_get_font(size), fill=(r, g, b))
-    img[:] = cv2.cvtColor(np.array(pil), cv2.COLOR_RGB2BGR)
-    return img
-
-
-def text_width(text, size=FONT_SIZE):
-    """Pixel width of text with the overlay font (for greedy wrapping)."""
-    draw = ImageDraw.Draw(Image.new("RGB", (1, 1)))
-    bbox = draw.textbbox((0, 0), text, font=_get_font(size))
-    return bbox[2] - bbox[0]
-
-
-def text_height(size=FONT_SIZE):
-    """Pixel line height (ascender+descender) of the overlay font."""
-    draw = ImageDraw.Draw(Image.new("RGB", (1, 1)))
-    bbox = draw.textbbox((0, 0), "Ag", font=_get_font(size))
-    return bbox[3] - bbox[1]
+_get_font = _overlay._get_font
+FONT_PATH = _overlay.FONT_PATH
+FONT_SIZE = _overlay.FONT_SIZE
 
 # ── Smart sentence (Groq LLM cleanup) ─────────────────────────────────────────
 # Settings live in config.py (env-overridable: GROQ_MODEL, GROQ_TIMEOUT,
 # GROQ_RETRIES, SMART_CALL_INTERVAL, SMART_RETRY_INTERVAL, SMART_POLL_INTERVAL).
-PROMPT_PATH = os.path.join(os.path.dirname(__file__), "..",
-                           "TXT_NOISE_RMV_PROMPT.md")
-
-
-# .env is loaded by config.py on import (PROJECT_ROOT/.env).
-
-
-def _load_prompt_template():
-    with open(PROMPT_PATH, encoding="utf-8") as f:
-        return f.read()
-
-
-class SmartSentence:
-    """Thread-safe holder for the LLM-cleaned sentence."""
-
-    def __init__(self):
-        self._lock = threading.Lock()
-        self.text = ""
-        self.pending = False  # a request is in flight
-        self.error = None     # last error message, if any
-        self._last_sent = ""
-        self._last_err_time = 0.0
-
-    def set_result(self, raw_sent, cleaned):
-        with self._lock:
-            self.text = cleaned
-            self._last_sent = raw_sent
-            self.pending = False
-            self.error = None
-
-    def set_error(self, msg):
-        with self._lock:
-            self.pending = False
-            self.error = msg
-
-    def mark_pending(self, raw_sent):
-        with self._lock:
-            if self.pending:
-                return False
-            self.pending = True
-            self._last_sent = raw_sent
-            return True
-
-    def retry_now(self):
-        """Force an immediate retry of the last sentence (manual retry button).
-
-        Clears cooldown + last-sent so the worker picks it up on next poll.
-        Returns False if a request is already in flight or nothing to retry.
-        """
-        with self._lock:
-            if self.pending or not self._last_sent:
-                return False
-            self._last_sent = ""
-            self._last_err_time = 0.0
-            self.error = None
-            return True
-
-    def clear(self):
-        with self._lock:
-            self.text = ""
-            self._last_sent = ""
-            self.pending = False
-            self.error = None
-
-    def read(self):
-        with self._lock:
-            return self.text, self.pending, self.error
-
-
-def _call_groq(raw_sentence, prompt_template, api_key):
-    """Send raw words to Groq for cleanup, return cleaned text.
-
-    Uses the OpenAI module against the Groq endpoint (base_url from config,
-    model GROQ_MODEL, key GROQ_API_KEY from .env).
-    """
-    from openai import OpenAI
-
-    client = OpenAI(
-        api_key=api_key,
-        base_url=cfg.GROQ_BASE_URL,
-        timeout=cfg.GROQ_TIMEOUT,
-        max_retries=cfg.GROQ_RETRIES + 1,
-    )
-    prompt = prompt_template.replace("{{Predict}}", raw_sentence)
-    resp = client.chat.completions.create(
-        model=cfg.GROQ_MODEL,
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": raw_sentence},
-        ],
-        temperature=0,
-        top_p=1.0,
-        max_tokens=256,
-    )
-    text = (resp.choices[0].message.content or "").strip()
-    text = text.strip().strip('"').strip("'")
-    if text.lower().startswith("output:"):
-        text = text[7:].strip()
-    if not text:
-        raise RuntimeError(f"Empty Groq response: {resp}")
-    return text
-
-
-def smart_worker(get_sentence, smart, stop_event, is_active=None):
-    """Poll every 0.1s; call Groq only when the sentence changed + 7s throttle."""
-    try:
-        prompt_template = _load_prompt_template()
-    except OSError as e:
-        smart.set_error(f"Prompt file missing: {e}")
-        return
-    if is_active is None:
-        is_active = lambda: True
-    last_call = 0.0
-    while not stop_event.is_set():
-        raw = " ".join(get_sentence())
-        if raw:
-            api_key = cfg.GROQ_API_KEY
-            if not api_key:
-                smart.set_error("Missing GROQ_API_KEY — nhập key ở phần Cài đặt")
-            else:
-                with smart._lock:
-                    already_sent = raw == getattr(smart, "_last_sent", "")
-                    busy = smart.pending
-                    last_err = getattr(smart, "_last_err_time", 0.0)
-                cooling = (time.monotonic() - last_err) < cfg.SMART_RETRY_INTERVAL
-                throttled = (time.monotonic() - last_call) < cfg.SMART_CALL_INTERVAL
-                if not already_sent and not busy and not cooling and not throttled:
-                    if not is_active():
-                        pass  # not inferring: skip call, retry on next poll
-                    elif smart.mark_pending(raw):
-                        try:
-                            cleaned = None
-                            last_exc = None
-                            for _ in range(cfg.GROQ_RETRIES + 1):
-                                try:
-                                    cleaned = _call_groq(
-                                        raw, prompt_template, api_key)
-                                    break
-                                except Exception as e:
-                                    last_exc = e
-                            if cleaned is None:
-                                raise last_exc
-                            smart.set_result(raw, cleaned)
-                            last_call = time.monotonic()
-                        except Exception as e:  # keep old text, retry after interval
-                            smart.set_error(
-                                f"[{cfg.GROQ_MODEL}] {type(e).__name__}: {e}")
-                            with smart._lock:
-                                # allow retry of the SAME sentence after cooldown
-                                # (not only on next change)
-                                smart._last_sent = ""
-                                smart._last_err_time = time.monotonic()
-        time.sleep(cfg.SMART_POLL_INTERVAL)
-
-
-def draw_sentence(img, sentence):
-    """Draw the committed sentence in a box at the bottom of the frame.
-
-    Wraps with text_width() to fit the frame width, up to
-    SENTENCE_MAX_LINES lines. The newest word is drawn green, the rest white.
-    """
-    h, w = img.shape[:2]
-    margin, pad = 20, 10
-
-    words = list(sentence) if sentence else ["(trống)"]
-    # Greedy wrap into lines that fit the frame width.
-    lines = [""]
-    max_w = w - 2 * (margin + pad)
-    for wd in words:
-        cand = (lines[-1] + " " + wd).strip()
-        tw = text_width(cand)
-        if tw <= max_w or not lines[-1]:
-            lines[-1] = cand
-        elif len(lines) < SENTENCE_MAX_LINES:
-            lines.append(wd)
-        else:
-            break  # box full: older words stay in `sentence`, only display clips
-    lines = lines[:SENTENCE_MAX_LINES]
-
-    lh = text_height()
-    line_h = lh + 8
-    box_h = line_h * len(lines) + 2 * pad
-    box_y0 = h - box_h - margin
-    overlay = img.copy()
-    cv2.rectangle(overlay, (margin, box_y0),
-                  (w - margin, h - margin), (30, 30, 30), -1)
-    cv2.addWeighted(overlay, 0.65, img, 0.35, 0, img)
-
-    y = box_y0 + pad
-    newest = words[-1] if sentence else None
-    for line in lines:
-        if newest and line.endswith(newest) and line != newest:
-            # Split line so the newest word renders green.
-            head = line[:len(line) - len(newest)].rstrip()
-            put_text_unicode(img, head, (margin + pad, y), (255, 255, 255))
-            put_text_unicode(img, newest,
-                             (margin + pad + text_width(head + " "), y),
-                             (0, 255, 0))
-        else:
-            color = (0, 255, 0) if line == newest else (255, 255, 255)
-            put_text_unicode(img, line, (margin + pad, y), color)
-        y += line_h
-    return img
-
-
-def draw_sentence_smart(img, smart_text, pending=False, error=None, y_bottom=None):
-    """Draw the LLM-cleaned sentence in a box above the raw sentence box.
-
-    Same greedy-wrap layout as draw_sentence (up to SENTENCE_MAX_LINES lines).
-    `y_bottom`: bottom edge of this box; defaults to sitting just above the
-    raw sentence box. Shows a status line when pending/error/empty.
-    """
-    h, w = img.shape[:2]
-    margin, pad = 20, 10
-
-    if error:
-        lines = [f"(smart lỗi: {error})"]
-    elif not smart_text:
-        lines = ["(smart: ...)" if pending else "(smart: trống)"]
-    else:
-        lines = [""]
-        max_w = w - 2 * (margin + pad)
-        for wd in smart_text.split():
-            cand = (lines[-1] + " " + wd).strip()
-            tw = text_width(cand)
-            if tw <= max_w or not lines[-1]:
-                lines[-1] = cand
-            elif len(lines) < SENTENCE_MAX_LINES:
-                lines.append(wd)
-            else:
-                break
-        lines = lines[:SENTENCE_MAX_LINES]
-
-    title = "Smart:"
-    lh = text_height()
-    line_h = lh + 8
-    box_h = line_h * (len(lines) + 1) + 2 * pad
-    if y_bottom is None:
-        # Reserve space for the raw box: estimate its height the same way
-        # draw_sentence does (assume 1 line) and stack above it.
-        raw_box_h = line_h + 2 * pad
-        y_bottom = h - raw_box_h - margin - 8
-    box_y0 = y_bottom - box_h
-    overlay = img.copy()
-    cv2.rectangle(overlay, (margin, box_y0),
-                  (w - margin, y_bottom), (30, 30, 30), -1)
-    cv2.addWeighted(overlay, 0.65, img, 0.35, 0, img)
-
-    y = box_y0 + pad
-    put_text_unicode(img, title, (margin + pad, y), (0, 200, 255))
-    y += line_h
-    for line in lines:
-        put_text_unicode(img, line, (margin + pad, y), (255, 255, 255))
-        y += line_h
-    return img
-
-
-def draw_confidence_bars(img, actions, probs, pred_idx, bar_x=20, bar_y=80,
-                         bar_w=200, bar_h=22, gap=10):
-    """Draw a labelled confidence bar for each class."""
-    for i, (action, prob) in enumerate(zip(actions, probs)):
-        y = bar_y + i * (bar_h + gap)
-
-        # Background track
-        cv2.rectangle(img, (bar_x, y), (bar_x + bar_w, y + bar_h),
-                      (50, 50, 50), -1)
-
-        # Filled bar — green for predicted class, blue for others
-        fill = int(prob * bar_w)
-        color = (0, 220, 0) if (pred_idx >= 0 and i == pred_idx) else (200, 120, 0)
-        if fill > 0:
-            cv2.rectangle(img, (bar_x, y), (bar_x + fill, y + bar_h), color, -1)
-
-        # Label + percentage
-        label = f"{action}: {prob * 100:.1f}%"
-        put_text_unicode(img, label, (bar_x + bar_w + 8, y + 2),
-                         (255, 255, 255), size=18)
+# Implementation lives in scripts/groq_client.py; re-exported here for
+# backward compatibility (`from scripts.realtime_predict import ...`).
+from scripts.groq_client import (
+    PROMPT_PATH,
+    SmartSentence,
+    _call_groq,
+    _load_prompt_template,
+    call_groq,
+    load_prompt_template,
+    smart_worker,
+)
 
 
 def main():
@@ -424,7 +132,7 @@ def main():
             ret, frame = cap.read()
             if not ret:
                 break
-
+            # frame = cv2.flip(frame,1)
             # ── MediaPipe inference ──────────────────────────────────────────
             img, results = detect(frame, holistic)
             img = draw_landmarks_new(img, results)

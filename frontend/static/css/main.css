@@ -1,0 +1,25 @@
+body { font-family: sans-serif; max-width: 900px; margin: 0 auto; padding: 16px; }
+#stage { position: relative; max-width: 100%; }
+#camera { max-width: 100%; width: 100%; background: #111; display: none; }
+#camera.live { display: block; }
+#debugFrame {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #111;
+}
+#stage.debug #debugFrame { display: block; }
+#pred { font-size: 1.4em; font-weight: bold; }
+#sentence { font-size: 1.2em; background: #f4f4f4; padding: 8px; min-height: 1.5em; }
+#smart { font-size: 1.2em; background: #eef6ff; padding: 8px; min-height: 1.5em; }
+.row { display: flex; gap: 8px; margin: 8px 0; }
+.sign-grid { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.sign-cell { margin: 0; text-align: center; }
+.sign-cell img { width: 64px; height: 64px; object-fit: contain; background: #fff; border: 1px solid #ddd; border-radius: 4px; }
+.sign-cell figcaption { font-size: 0.75em; color: #666; }
+.sign-fallback { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 1.5em; font-weight: bold; background: #f0f0f0; border: 1px dashed #aaa; border-radius: 4px; }
+.sign-word-gap { width: 16px; }

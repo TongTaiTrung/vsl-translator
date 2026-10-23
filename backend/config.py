@@ -94,13 +94,14 @@ TEST_SPLIT = 0.15          # held-out test set, never touched during training
 RANDOM_SEED = 42
 EPOCHS = 500
 MODEL_FILENAME = "model.keras"
+TRAIN_RECORD_FILENAME = "train_record.json"  # hyperparameters + epoch history, beside the model
 BATCH_SIZE = 16
 
 # ── Inference ────────────────────────────────────────────────────────────────
 CONFIDENCE_THRESHOLD = 0.70  # below this → "uncertain", no label emitted
 SMOOTHING_WINDOW = 5         # majority-vote window for live prediction
 
-# ── Smart sentence (Groq LLM cleanup, see scripts/realtime_predict.py) ─────────
+# ── Smart sentence (Groq LLM cleanup, see scripts/groq_client.py) ────────────
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b")
 GROQ_BASE_URL = os.environ.get("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
 GROQ_TIMEOUT = float(os.environ.get("GROQ_TIMEOUT", "30.0"))
