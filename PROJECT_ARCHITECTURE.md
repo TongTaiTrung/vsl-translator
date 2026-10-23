@@ -20,7 +20,7 @@ Vòng lặp cốt lõi: `landmark MediaPipe Holistic (từng frame) → vector 3
 | Nhãn | 7 lớp trong `backend/actions.json`: `diachi, camon, xinchao, toi, khoer, khochiu, tambiet` |
 | Sản phẩm tạo ra | `backend/models/model.keras + feature_stats.npz + test_set.npz`, thư mục `models/backups/backup_*` theo thời gian, `logs/` cho TensorBoard |
 
-## 2. Kiến Trúc Tổng Thể
+## 2. Kiến Trúc Tổng Th
 
 Phong cách: **monolith phân lớp với hai front-end dùng chung một lõi suy luận**.
 
