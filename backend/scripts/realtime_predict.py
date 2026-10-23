@@ -190,14 +190,10 @@ def _call_groq(raw_sentence, prompt_template, api_key):
 
 def smart_worker(get_sentence, smart, stop_event, is_active=None):
     """Poll every 0.1s; call Groq only when the sentence changed + 7s throttle."""
-    api_key = cfg.GROQ_API_KEY
     try:
         prompt_template = _load_prompt_template()
     except OSError as e:
         smart.set_error(f"Prompt file missing: {e}")
-        return
-    if not api_key:
-        smart.set_error("Missing GROQ_API_KEY env var")
         return
     if is_active is None:
         is_active = lambda: True
@@ -205,38 +201,42 @@ def smart_worker(get_sentence, smart, stop_event, is_active=None):
     while not stop_event.is_set():
         raw = " ".join(get_sentence())
         if raw:
-            with smart._lock:
-                already_sent = raw == getattr(smart, "_last_sent", "")
-                busy = smart.pending
-                last_err = getattr(smart, "_last_err_time", 0.0)
-            cooling = (time.monotonic() - last_err) < cfg.SMART_RETRY_INTERVAL
-            throttled = (time.monotonic() - last_call) < cfg.SMART_CALL_INTERVAL
-            if not already_sent and not busy and not cooling and not throttled:
-                if not is_active():
-                    pass  # not inferring: skip call, retry on next poll
-                elif smart.mark_pending(raw):
-                    try:
-                        cleaned = None
-                        last_exc = None
-                        for _ in range(cfg.GROQ_RETRIES + 1):
-                            try:
-                                cleaned = _call_groq(
-                                    raw, prompt_template, api_key)
-                                break
-                            except Exception as e:
-                                last_exc = e
-                        if cleaned is None:
-                            raise last_exc
-                        smart.set_result(raw, cleaned)
-                        last_call = time.monotonic()
-                    except Exception as e:  # keep old text, retry after interval
-                        smart.set_error(
-                            f"[{cfg.GROQ_MODEL}] {type(e).__name__}: {e}")
-                        with smart._lock:
-                            # allow retry of the SAME sentence after cooldown
-                            # (not only on next change)
-                            smart._last_sent = ""
-                            smart._last_err_time = time.monotonic()
+            api_key = cfg.GROQ_API_KEY
+            if not api_key:
+                smart.set_error("Missing GROQ_API_KEY — nhập key ở phần Cài đặt")
+            else:
+                with smart._lock:
+                    already_sent = raw == getattr(smart, "_last_sent", "")
+                    busy = smart.pending
+                    last_err = getattr(smart, "_last_err_time", 0.0)
+                cooling = (time.monotonic() - last_err) < cfg.SMART_RETRY_INTERVAL
+                throttled = (time.monotonic() - last_call) < cfg.SMART_CALL_INTERVAL
+                if not already_sent and not busy and not cooling and not throttled:
+                    if not is_active():
+                        pass  # not inferring: skip call, retry on next poll
+                    elif smart.mark_pending(raw):
+                        try:
+                            cleaned = None
+                            last_exc = None
+                            for _ in range(cfg.GROQ_RETRIES + 1):
+                                try:
+                                    cleaned = _call_groq(
+                                        raw, prompt_template, api_key)
+                                    break
+                                except Exception as e:
+                                    last_exc = e
+                            if cleaned is None:
+                                raise last_exc
+                            smart.set_result(raw, cleaned)
+                            last_call = time.monotonic()
+                        except Exception as e:  # keep old text, retry after interval
+                            smart.set_error(
+                                f"[{cfg.GROQ_MODEL}] {type(e).__name__}: {e}")
+                            with smart._lock:
+                                # allow retry of the SAME sentence after cooldown
+                                # (not only on next change)
+                                smart._last_sent = ""
+                                smart._last_err_time = time.monotonic()
         time.sleep(cfg.SMART_POLL_INTERVAL)
 
 

@@ -37,6 +37,15 @@
     </div>
 
     <hr>
+    <h2>Cài đặt</h2>
+    <p>Groq API key: <span id="groqStatus">...</span></p>
+    <div class="row">
+        <input type="password" id="groqKey" placeholder="gsk_..." size="40" autocomplete="off" />
+        <button id="saveKeyBtn">Lưu key</button>
+    </div>
+    <p id="keyMsg"></p>
+
+    <hr>
     <button id="testBtn">Gọi test()</button>
     <p id="result"></p>
 
@@ -56,6 +65,8 @@
                     : s.smart ? s.smart
                     : s.smart_pending ? "(smart: ...)" : "(smart: trống)";
                 if (s.groq_model) document.getElementById("groqModel").textContent = s.groq_model;
+                if ("groq_configured" in s) document.getElementById("groqStatus").textContent =
+                    s.groq_configured ? "đã cấu hình" : "chưa có — smart sẽ báo lỗi";
                 document.getElementById("startBtn").disabled = !!s.inferring;
                 document.getElementById("stopBtn").disabled = !s.inferring;
             } catch (e) { /* server/camera chưa sẵn sàng */ }
@@ -113,6 +124,28 @@
         }
         document.getElementById("startBtn").addEventListener("click", () => inferenceAction("start"));
         document.getElementById("stopBtn").addEventListener("click", () => inferenceAction("stop"));
+
+        document.getElementById("saveKeyBtn").addEventListener("click", async () => {
+            const key = document.getElementById("groqKey").value.trim();
+            const msg = document.getElementById("keyMsg");
+            if (!key) { msg.textContent = "Nhập key trước khi lưu."; return; }
+            msg.textContent = "Đang lưu...";
+            try {
+                const res = await fetch("/api/config", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "set_groq_key", key })
+                });
+                const data = await res.json();
+                if (data.ok || data.groq_configured) {
+                    msg.textContent = "Đã lưu key vào backend/.env — có hiệu lực ngay.";
+                    document.getElementById("groqKey").value = "";
+                    refreshState();
+                } else {
+                    msg.textContent = `(lỗi: ${data.error || "không lưu được"})`;
+                }
+            } catch (e) { msg.textContent = `(lỗi mạng: ${e})`; }
+        });
 
         document.getElementById("testBtn").addEventListener("click", async () => {
             const res = await fetch("/api/test", {

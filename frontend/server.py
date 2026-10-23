@@ -71,6 +71,29 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 return self._send_json({"error": "unknown action"}, 400)
             return self._send_json({"ok": True, **predictor.snapshot()})
+        if path == "/api/config":
+            length = int(self.headers.get("Content-Length", 0))
+            try:
+                payload = json.loads(self.rfile.read(length) or b"{}")
+            except json.JSONDecodeError:
+                return self._send_json({"error": "invalid JSON"}, 400)
+            if payload.get("action", "") != "set_groq_key":
+                return self._send_json({"error": "unknown action"}, 400)
+            key = (payload.get("key", "") or "").strip()
+            if not key:
+                return self._send_json(
+                    {"error": "empty key"}, 400)
+            try:
+                predictor = caller.Predictor.peek() or caller.Predictor.get()
+            except Exception as e:
+                return self._send_json({"error": str(e)}, 500)
+            try:
+                result = predictor.set_groq_key(key)
+            except ValueError as e:
+                return self._send_json({"error": str(e)}, 400)
+            except Exception as e:
+                return self._send_json({"error": str(e)}, 500)
+            return self._send_json(result)
         if path != "/api/test":
             return self._send_json({"error": "not found"}, 404)
         length = int(self.headers.get("Content-Length", 0))

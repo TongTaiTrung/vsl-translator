@@ -146,6 +146,18 @@ class Predictor:
                     "error": "nothing to retry (request in flight or empty)"}
         return {"ok": True, **self.snapshot()}
 
+    def set_groq_key(self, key):
+        """Save Groq API key to backend .env (used by /api/config).
+
+        Worker đọc cfg.GROQ_API_KEY động mỗi vòng poll nên key mới có
+        hiệu lực ngay, không cần restart server/predictor.
+        """
+        cfg.set_groq_api_key(key)
+        # Xoá lỗi "missing key" cũ để worker thử lại ngay vòng sau.
+        self.smart.retry_now()
+        return {"ok": True, **self.snapshot(),
+                "groq_configured": bool(cfg.GROQ_API_KEY)}
+
     def snapshot(self):
         with self._lock:
             pred = (str(cfg.ACTIONS[self.pred_idx])
@@ -161,6 +173,7 @@ class Predictor:
                 "inferring": self.inferring,
                 "debug": self.debug,
                 "groq_model": cfg.GROQ_MODEL,
+                "groq_configured": bool(cfg.GROQ_API_KEY),
             }
         smart_text, smart_pending, smart_error = self.smart.read()
         snapshot["smart"] = smart_text
@@ -308,11 +321,13 @@ def get_state():
         return {"status": "Chưa mở camera (bấm Bắt đầu để nhận diện)",
                 "pred": None, "conf": 0.0, "sentence": [], "buffer": "0/0",
                 "inferring": False, "debug": False,
-                "smart": "", "smart_pending": False, "smart_error": None}
+                "smart": "", "smart_pending": False, "smart_error": None,
+                "groq_configured": bool(cfg.GROQ_API_KEY)}
     try:
         return predictor.snapshot()
     except Exception as e:  # model not loaded yet / load failed
         return {"status": f"unavailable: {e}", "pred": None,
                 "conf": 0.0, "sentence": [], "buffer": "0/0",
                 "inferring": False, "debug": False,
+                "groq_configured": bool(cfg.GROQ_API_KEY),
                 "smart": "", "smart_pending": False, "smart_error": None}

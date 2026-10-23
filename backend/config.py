@@ -110,6 +110,32 @@ SMART_RETRY_INTERVAL = float(os.environ.get("SMART_RETRY_INTERVAL", "15.0"))
 SMART_POLL_INTERVAL = float(os.environ.get("SMART_POLL_INTERVAL", "0.1"))
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
+
+def set_groq_api_key(key):
+    """Persist Groq API key to PROJECT_ROOT/.env and update runtime value."""
+    global GROQ_API_KEY
+    key = (key or "").strip().strip("'\"")
+    if not key:
+        raise ValueError("empty API key")
+    GROQ_API_KEY = key
+    os.environ["GROQ_API_KEY"] = key
+    env_path = os.path.join(PROJECT_ROOT, ".env")
+    try:
+        with open(env_path, encoding="utf-8") as f:
+            lines = f.read().splitlines()
+    except OSError:
+        lines = []
+    found = False
+    for i, line in enumerate(lines):
+        if line.strip().startswith("GROQ_API_KEY="):
+            lines[i] = f'GROQ_API_KEY="{key}"'
+            found = True
+    if not found:
+        lines.append(f'GROQ_API_KEY="{key}"')
+    with open(env_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+    return True
+
 # ── Shoulder-relative / scale normalization ──────────────────────────────────
 SHOULDER_VIS_THRESHOLD = 0.5  # shoulders below this visibility → frame zeros
 MIN_SHOULDER_WIDTH = 0.05     # legacy: unused by canonical extract() (no width
