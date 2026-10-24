@@ -49,6 +49,10 @@ class FrontendGroqCaller:
         """Return (text, pending, error) of the cleaned sentence."""
         return self._smart.read()
 
+    def clear(self):
+        """Drop the cleaned sentence immediately (reset)."""
+        self._smart.clear()
+
     def clear_if_empty(self, sentence):
         """Clear stale smart text when there is no raw sentence."""
         if not sentence:
@@ -73,7 +77,9 @@ class FrontendGroqCaller:
             try:
                 cleaned = gc.retry_smart_sync(raw)
             except Exception as e:
-                return {"ok": False, "error": str(e)}
+                msg = f"{type(e).__name__}: {e}"
+                self._smart.set_error(msg)
+                return {"ok": False, "error": msg}
             self._smart.set_result(raw, cleaned)
             return {"ok": True}
         if not self._smart.retry_now():

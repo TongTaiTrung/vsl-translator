@@ -1,8 +1,8 @@
 import { pollState } from "./api/stateApi.js";
 import { startInference, stopInference } from "./api/inferenceApi.js";
-import { clearSentence, backspaceWord } from "./api/sentencesApi.js";
+import { clearSentence } from "./api/sentencesApi.js";
+import { speakSmart, speakManualInput } from "./api/ttsApi.js";
 import { retrySmart } from "./api/smartApi.js";
-import { speakSentence, speakSmart, speakManualInput } from "./api/ttsApi.js";
 import { setGroqKey } from "./api/configApi.js";
 import { store } from "./store/store.js";
 import { renderStatus } from "./ui/statusView.js";
@@ -24,25 +24,21 @@ initSignInput();
 
 pollState(500, (data) => store.set(data));
 
-$("backspaceBtn").addEventListener("click", async () => {
-  try {
-    store.set(await backspaceWord());
-  } catch (e) { /* giữ state cũ */ }
-});
 $("clearBtn").addEventListener("click", async () => {
   try {
     store.set(await clearSentence());
   } catch (e) { /* giữ state cũ */ }
 });
 
-$("smartRetryBtn").addEventListener("click", async () => {
-  const fallback = $("sentence").textContent.split(/\s+/).filter(Boolean);
-  const sentence = store.state.sentence.length ? store.state.sentence : fallback;
-  try {
-    store.set(await retrySmart(sentence));
-  } catch (e) {
-    renderSmartError(e.message);
-  }
+const settingsDialog = $("settingsDialog");
+$("settingsBtn").addEventListener("click", () => settingsDialog.showModal());
+$("cancelKeyBtn").addEventListener("click", () => settingsDialog.close());
+settingsDialog.addEventListener("click", (e) => {
+  if (e.target === settingsDialog) settingsDialog.close();
+});
+settingsDialog.addEventListener("close", () => {
+  clearKeyInput();
+  showKeyMessage("");
 });
 
 const HINT_OFF = "Camera đang tắt. Bấm \"Bắt đầu nhận diện\" để mở camera trên thiết bị này.";
@@ -105,11 +101,21 @@ $("saveKeyBtn").addEventListener("click", async () => {
   }
 });
 
-$("speakSentenceBtn").addEventListener("click", async () => {
+$("smartRetryBtn").addEventListener("click", async () => {
+  const btn = $("smartRetryBtn");
+  if (btn.disabled) return;
+  const raw = (store.state.sentence || []).join(" ").trim();
+  btn.disabled = true;
+  store.set({ smart_pending: true, smart_error: null });
   try {
-    await speakSentence();
-  } catch (e) { /* bỏ qua, giữ state cũ */ }
+    store.set(await retrySmart(raw));
+  } catch (e) {
+    store.set({ smart_pending: false, smart_error: e.message });
+  } finally {
+    btn.disabled = false;
+  }
 });
+
 $("speakSmartBtn").addEventListener("click", async () => {
   try {
     await speakSmart();

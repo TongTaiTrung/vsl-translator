@@ -325,19 +325,34 @@ def main():
     _backup_old_model()
 
     # ── Load data (Strictly anti-leakage: raw -> split -> augment train only) ─
-    X_raw, y_raw = load_raw_dataset()
+    X_raw, y_raw, devices_raw = load_raw_dataset(return_devices=True)
     y_int = y_raw.argmax(axis=1)
 
+    # Stratify by action × device so each split holds every camera source in
+    # proportion (multi-source datasets must not bias toward one camera).
+    dev_idx = {d: i for i, d in enumerate(sorted(set(devices_raw)))}
+    strat_all = np.array([a * len(dev_idx) + dev_idx[d]
+                          for a, d in zip(y_int, devices_raw)])
+
+    def _split(X, y, devs, strat, **kw):
+        try:
+            return train_test_split(X, y, devs, stratify=strat, **kw)
+        except ValueError:  # tiny device group (<2 samples) → action-only strat
+            return train_test_split(X, y, devs,
+                                    stratify=np.array(y).argmax(axis=1), **kw)
+
     # Held-out test set first (never augmented, never used for early stopping)
-    X_rest, X_test_raw, y_rest, y_test = train_test_split(
-        X_raw, y_raw, test_size=cfg.TEST_SPLIT, random_state=cfg.RANDOM_SEED,
-        stratify=y_int
+    X_rest, X_test_raw, y_rest, y_test, dev_rest, dev_test = _split(
+        X_raw, y_raw, np.array(devices_raw), strat_all,
+        test_size=cfg.TEST_SPLIT, random_state=cfg.RANDOM_SEED,
     )
     # Then train/val split on the remainder
     val_frac = cfg.VAL_SPLIT / (1.0 - cfg.TEST_SPLIT)
-    X_train_raw, X_val_raw, y_train_raw, y_val = train_test_split(
-        X_rest, y_rest, test_size=val_frac, random_state=cfg.RANDOM_SEED,
-        stratify=y_rest.argmax(axis=1)
+    strat_rest = np.array([a * len(dev_idx) + dev_idx[d]
+                           for a, d in zip(y_rest.argmax(axis=1), dev_rest)])
+    X_train_raw, X_val_raw, y_train_raw, y_val, _, _ = _split(
+        X_rest, y_rest, dev_rest, strat_rest,
+        test_size=val_frac, random_state=cfg.RANDOM_SEED,
     )
 
     # Persist the test indices (as keypoint hashes are unstable) by saving raw test set

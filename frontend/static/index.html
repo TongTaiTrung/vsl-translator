@@ -1,60 +1,123 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VSL-Translator</title>
+    <title>VSL Translator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Huninn&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/main.css">
 </head>
 <body>
-    <h1>VSL-Translator</h1>
-    <div class="row">
-        <button id="startBtn">Bắt đầu nhận diện</button>
-        <button id="stopBtn">Dừng</button>
-        <label><input type="checkbox" id="debugChk"> Debug landmark</label>
+    <div class="sky" aria-hidden="true">
+        <span class="orb orb-a"></span>
+        <span class="orb orb-b"></span>
+        <span class="orb orb-c"></span>
     </div>
-    <div id="stage">
-        <video id="camera" autoplay playsinline muted></video>
-        <img id="debugFrame" alt="">
-    </div>
-    <p id="streamHint">Camera đang tắt. Bấm "Bắt đầu nhận diện" để mở camera trên thiết bị này.</p>
-    <p>Status: <span id="status">...</span> | Buffer: <span id="buffer">...</span></p>
-    <p>Dự đoán: <span id="pred">...</span></p>
-    <p>Câu:</p>
-    <div id="sentence"></div>
-    <p>Câu smart (Groq <span id="groqModel">...</span>):</p>
-    <div id="smart"></div>
-    <div class="row">
-        <button id="smartRetryBtn">Thử lại smart</button>
-        <button id="speakSmartBtn">Đọc câu smart</button>
-    </div>
-    <div class="row">
-        <button id="backspaceBtn">Xóa từ cuối</button>
-        <button id="clearBtn">Xóa cả câu</button>
-        <button id="speakSentenceBtn">Đọc câu</button>
-    </div>
-    
-    <hr>
-    <h2>Cài đặt</h2>
-    <p>Groq API key: <span id="groqStatus">...</span></p>
-    <div class="row">
-        <input type="password" id="groqKey" placeholder="gsk_..." size="40" autocomplete="off" />
-        <button id="saveKeyBtn">Lưu key</button>
-    </div>
-    <hr>
-    <h2>Ngôn ngữ ký hiệu</h2>
-    <div class="row">
-        <input type="text" id="signInput" placeholder="Nhập câu tiếng Việt..." size="50" autocomplete="off" />
-        <button id="signConvertBtn">Chuyển đổi</button>
-        <button id="speakInputBtn">Đọc</button>
-        <button id="micBtn">Mic</button>
-        <span id="micStatus"></span>
-        <button id="signFillBtn">Lấy từ câu nhận diện</button>
-    </div>
-    <p id="signCaption"></p>
-    <div id="signGrid" class="sign-grid"></div>
 
-    <p id="keyMsg"></p>
+    <div class="app">
+        <div class="board glass">
+            <section class="pane" aria-label="Ghi hình">
+                <div class="pane-bar">
+                    <h2 class="pane-title">Ghi hình</h2>
+                    <div class="actions">
+                        <button id="startBtn" type="button" class="btn-fill">Bắt đầu nhận diện</button>
+                        <button id="stopBtn" type="button" disabled>Dừng</button>
+                    </div>
+                    <div class="pane-tools">
+                        <label class="switch">
+                            <input type="checkbox" id="debugChk">
+                            <span class="switch-track" aria-hidden="true"></span>
+                            <span class="switch-label">Hiện landmark</span>
+                        </label>
+                        <button id="settingsBtn" class="icon-btn" type="button" aria-label="Cài đặt">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="stage">
+                    <video id="camera" autoplay playsinline muted aria-label="Camera"></video>
+                    <img id="debugFrame" alt="">
+                    <p id="streamHint">Camera đang tắt. Bấm "Bắt đầu nhận diện" để mở camera trên thiết bị này.</p>
+                </div>
+
+                <div class="live-meta">
+                    <div class="ring" id="confRing" style="--p: 0">
+                        <span id="confPct">0%</span>
+                    </div>
+                    <div class="live-copy">
+                        <p id="status" class="status-line">Sẵn sàng</p>
+                        <p class="meter-label">Độ tin cậy · bộ đệm <strong id="buffer">0/0</strong></p>
+                        <div class="wide-track" aria-hidden="true"><span id="bufferBar"></span></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="pane pane-out" aria-label="Kết quả">
+                <div class="pane-bar">
+                    <h2 class="pane-title">Kết quả</h2>
+                </div>
+                <div id="pred" class="badges" data-key="e:chưa có" aria-live="polite"><span class="badge badge-empty">chưa có</span></div>
+                <div id="sentence" class="kept"></div>
+                <article class="smart-result">
+                    <div class="tile-head">
+                        <div>
+                            <h2>Câu smart</h2>
+                            <p class="model">Groq <span id="groqModel">...</span></p>
+                        </div>
+                        <div class="smart-actions">
+                            <button id="smartRetryBtn" type="button">Thử lại</button>
+                            <button id="clearBtn" class="icon-btn" type="button" aria-label="Đặt lại câu">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+                                    <path d="M3 4v5h5"></path>
+                                </svg>
+                            </button>
+                            <button id="speakSmartBtn" class="icon-btn" type="button" aria-label="Đọc câu smart">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M11 5 6 9H3v6h3l5 4V5z"></path>
+                                    <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+                                    <path d="M18 6a8.5 8.5 0 0 1 0 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="smart">Chưa có câu.</div>
+                </article>
+                <div class="composer">
+                    <input type="text" id="signInput" placeholder="Nhập câu tiếng Việt" autocomplete="off">
+                    <button id="signConvertBtn" type="button" class="btn-fill">Chuyển đổi</button>
+                    <button id="speakInputBtn" type="button">Đọc</button>
+                    <button id="micBtn" type="button">Mic</button>
+                    <button id="signFillBtn" type="button">Lấy câu smart</button>
+                </div>
+                <p id="micStatus" class="quiet"></p>
+                <p id="signCaption" class="quiet"></p>
+                <div id="signGrid" class="sign-grid"></div>
+            </section>
+        </div>
+    </div>
+
+    <dialog id="settingsDialog" aria-labelledby="settingsTitle">
+        <div class="glass dialog-card">
+            <h2 id="settingsTitle">Cài đặt</h2>
+            <section>
+                <h3>API key</h3>
+                <p class="quiet">Trạng thái: <span id="groqStatus">...</span></p>
+                <input type="password" id="groqKey" placeholder="gsk_..." autocomplete="off">
+                <p id="keyMsg" class="quiet"></p>
+                <div class="dialog-actions">
+                    <button id="cancelKeyBtn" type="button">Huỷ</button>
+                    <button id="saveKeyBtn" type="button" class="btn-fill">Lưu</button>
+                </div>
+            </section>
+        </div>
+    </dialog>
 
     <script type="module" src="/static/js/main.js"></script>
 </body>

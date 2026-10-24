@@ -1,5 +1,6 @@
 import { transliterate } from "./transliterate.js";
 import { startMic, stopMic, pollStt } from "../api/sttApi.js";
+import { store } from "../store/store.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -49,9 +50,8 @@ export function initSignInput() {
   $("signInput")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") renderSignFromText(getManualText());
   });
-  // Prefill từ câu nhận diện nếu có, nhưng không tự động theo dõi store.
   $("signFillBtn")?.addEventListener("click", () => {
-    const s = $("sentence")?.textContent.trim() || "";
+    const s = (store.state.smart || "").trim();
     if ($("signInput") && s) {
       $("signInput").value = s;
       renderSignFromText(s);
@@ -78,7 +78,9 @@ function appendHeard(texts) {
 
 function setMicOn(on) {
   const btn = $("micBtn");
-  if (btn) btn.textContent = on ? "Dừng" : "Mic";
+  if (!btn) return;
+  btn.textContent = on ? "Dừng" : "Mic";
+  btn.classList.toggle("is-on", on);
 }
 
 export function initMic() {

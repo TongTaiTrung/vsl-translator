@@ -424,14 +424,19 @@ def standardize_features(X, mean=None, std=None):
 # ── Dataset loading & augmentation ───────────────────────────────────────────
 
 def load_raw_dataset(data_dir=cfg.DATA_DIR, actions=cfg.ACTIONS, label_map=cfg.LABEL_MAP,
-                     n_sequences=cfg.N_SEQUENCES, sequence_len=cfg.SEQUENCE_LEN):
+                     n_sequences=cfg.N_SEQUENCES, sequence_len=cfg.SEQUENCE_LEN,
+                     return_devices=False):
     """Load raw keypoint sequences without any augmentation or normalization.
+
+    Reads optional meta.json per sequence dir for the camera source label
+    (written by collect_data.py --device / migrate_data.py, else "legacy").
 
     Returns:
         X (np.ndarray): Shape (num_samples, sequence_len, num_features), dtype float32
         y (np.ndarray): Shape (num_samples, num_classes), dtype float32 (one-hot)
+        devices (list[str], only if return_devices): camera source per sample
     """
-    sequences, labels = [], []
+    sequences, labels, devices = [], [], []
     found_actions = []
 
     for action in actions:
@@ -473,6 +478,12 @@ def load_raw_dataset(data_dir=cfg.DATA_DIR, actions=cfg.ACTIONS, label_map=cfg.L
                 sequences.append(np.array(window, dtype=np.float32))
                 labels.append(label_map[action])
                 action_seq_count += 1
+                try:
+                    import json as _json
+                    with open(os.path.join(seq_dir, "meta.json")) as _f:
+                        devices.append(_json.load(_f).get("device", "legacy"))
+                except (OSError, ValueError, KeyError):
+                    devices.append("legacy")
 
         if action_seq_count > 0:
             found_actions.append(f"{action} ({action_seq_count} raw)")
@@ -486,6 +497,8 @@ def load_raw_dataset(data_dir=cfg.DATA_DIR, actions=cfg.ACTIONS, label_map=cfg.L
     print(f"Loaded raw dataset: {len(sequences)} total sequences from {found_actions}")
     X = np.array(sequences, dtype=np.float32)
     y = to_categorical(labels, num_classes=len(actions)).astype(np.float32)
+    if return_devices:
+        return X, y, devices
     return X, y
 
 

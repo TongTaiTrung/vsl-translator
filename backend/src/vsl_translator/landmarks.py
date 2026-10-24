@@ -36,6 +36,40 @@ def detect(image, model):
     return cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR), results
 
 
+def normalize_frame(frame, size=None):
+    """Letterbox any frame to a square standard canvas, preserving aspect.
+
+    Returns (frame_std, meta) with meta = {src_w, src_h, size, scale, pad_x,
+    pad_y}. Same input pixels always map to the same output regardless of
+    source resolution. The output is what detect()/extract() callers should
+    pass as frame / frame_shape.
+    """
+    import config as _cfg
+    if size is None:
+        size = int(getattr(_cfg, 'FRAME_STD_SIZE', 640))
+    h, w = frame.shape[:2]
+    scale = size / max(w, h)
+    nw, nh = int(round(w * scale)), int(round(h * scale))
+    resized = cv2.resize(frame, (nw, nh), interpolation=cv2.INTER_AREA)
+    canvas = np.zeros((size, size, 3), dtype=frame.dtype)
+    pad_x, pad_y = (size - nw) // 2, (size - nh) // 2
+    canvas[pad_y:pad_y + nh, pad_x:pad_x + nw] = resized
+    return canvas, {"src_w": w, "src_h": h, "size": size,
+                    "scale": scale, "pad_x": pad_x, "pad_y": pad_y}
+
+
+def aspect_correct(x, y, frame_shape):
+    """Map normalized (x, y) to aspect-corrected centered coords.
+
+    x' = (x - 0.5) * (w / h), y' = y - 0.5. On letterboxed square frames
+    (w == h) this reduces to a plain centering shift, so bone vectors and
+    distances are comparable across cameras with different resolutions and
+    aspect ratios.
+    """
+    h, w = frame_shape
+    return ((float(x) - 0.5) * (w / h), float(y) - 0.5)
+
+
 def draw_landmarks(image, results):
     """Draw face, pose, and hand landmarks on the image."""
     # Draw face connections
@@ -105,7 +139,7 @@ STD_UPPER_ARM = 1.2
 STD_FOREARM = 1.0
 STD_PALM = 0.4
 BONE_EPS = 1e-6   # zero-length bone guard for _unit_vec
-MIN_PALM_SIZE = 0.012  # degenerate-palm guard for _process_hand
+MIN_PALM_SIZE = 0.012  # degenerate-palm guard for _process_hand (aspect-corrected units)
 # Idle-arm spatial gate defaults (overridable via config.py, read with getattr).
 IDLE_WRIST_Y_MAX = 1.75
 IDLE_WRIST_X_MAX = 0.95
@@ -464,29 +498,38 @@ def _shoulder_offsets(hand_lm, anchors, palm_size):
         blocks.append(((pts - av) / palm_size * STD_PALM).flatten())
     return np.concatenate(blocks)
 
+def _ac_dist(p, q, frame_shape):
+    """Euclidean distance in aspect-corrected centered coords.
+
+    Uses aspect_correct() on both endpoints when frame_shape is given;
+    falls back to raw normalized hypot when frame_shape is None.
+    """
+    if frame_shape is None:
+        return math.hypot(q[0] - p[0], q[1] - p[1])
+    ax, ay = aspect_correct(p[0], p[1], frame_shape)
+    bx, by = aspect_correct(q[0], q[1], frame_shape)
+    return math.hypot(bx - ax, by - ay)
+
+
 def _compute_arm_depth_ratio(shoulder, elbow, wrist, frame_shape=None,
                                neutral_len=None, dz=0.0, z_gain=None):
     """Compute foreshortening depth ratio against the arm's neutral length.
     - Forward to camera: 2D distance be shortened -> ratio < 1.0
     - Background to camera: 2D distance be stretched / reaches maximum length -> ratio > 1.0
 
-    Lengths are measured in pixels when frame_shape=(h, w) is given, so the
-    ratio is invariant to frame aspect ratio. neutral_len is the per-session
-    calibrated neutral arm length in the same units (pixels or normalized);
-    falls back to STD_UPPER_ARM + STD_FOREARM for offline data without
+    Lengths are measured in aspect-corrected normalized units (see
+    aspect_correct/aspect-corrected _ac_dist), so the ratio is comparable
+    across cameras with different resolutions and aspect ratios.
+    neutral_len is the per-session calibrated neutral arm length in the same
+    units; falls back to STD_UPPER_ARM + STD_FOREARM for offline data without
     calibration. dz (wrist.z - shoulder.z, MediaPipe relative depth) applies
     a clipped auxiliary correction via z_gain.
     """
     import config as _cfg
     if z_gain is None:
         z_gain = float(getattr(_cfg, 'ARM_DEPTH_Z_GAIN', 2.0))
-    if frame_shape is not None:
-        h, w = frame_shape
-        upper_raw_len = math.hypot((elbow[0]-shoulder[0])*w,(elbow[1]-shoulder[1])*h)
-        fore_raw_len = math.hypot((wrist[0]-elbow[0])*w,(wrist[1]-elbow[1])*h)
-    else:
-        upper_raw_len = math.hypot(elbow[0]-shoulder[0],elbow[1]-shoulder[1])
-        fore_raw_len = math.hypot(wrist[0]-elbow[0],wrist[1]-elbow[1])
+    upper_raw_len = _ac_dist(shoulder, elbow, frame_shape)
+    fore_raw_len = _ac_dist(elbow, wrist, frame_shape)
 
     actual_total_len = upper_raw_len + fore_raw_len
     standard_total_len = (neutral_len if neutral_len else
@@ -505,22 +548,23 @@ def _compute_arm_depth_ratio(shoulder, elbow, wrist, frame_shape=None,
 class ArmDepthCalibrator:
     """Per-session neutral arm-length calibration (one instance per video/session).
 
-    Collects pixel arm lengths from non-idle frames, then reports the median
-    as the neutral length for _compute_arm_depth_ratio. Values outside
-    [1.5, 4.0] x shoulder width are rejected as unreliable.
+    Collects aspect-corrected normalized arm lengths from non-idle frames,
+    then reports the median as the neutral length for
+    _compute_arm_depth_ratio. Values outside [1.5, 4.0] x shoulder width
+    (same units) are rejected as unreliable. Unit-free across cameras.
     """
 
     def __init__(self, warmup_frames=20):
         self.warmup_frames = warmup_frames
         self._samples = [[], []]
 
-    def update(self, side, arm_len_px, shoulder_width_px=None):
+    def update(self, side, arm_len, shoulder_width_ac=None):
         """Record one arm-length sample; returns True once calibrated."""
-        if shoulder_width_px:
-            lo, hi = 1.5 * shoulder_width_px, 4.0 * shoulder_width_px
-            if not (lo <= arm_len_px <= hi):
+        if shoulder_width_ac:
+            lo, hi = 1.5 * shoulder_width_ac, 4.0 * shoulder_width_ac
+            if not (lo <= arm_len <= hi):
                 return self.calibrated(side)
-        self._samples[side].append(float(arm_len_px))
+        self._samples[side].append(float(arm_len))
         return self.calibrated(side)
 
     def calibrated(self, side):
@@ -565,16 +609,15 @@ class ArmDepthSmoother:
 
 
 def feed_calibrator(results, frame_shape, calibrator, vis_thresh=None):
-    """Feed one frame's pixel arm lengths into calibrator; returns (left_ok, right_ok)."""
+    """Feed one frame's arm lengths (aspect-corrected units) into calibrator."""
     import config as _cfg
     if vis_thresh is None:
         vis_thresh = getattr(_cfg, 'SHOULDER_VIS_THRESHOLD', 0.5)
     if results.pose_landmarks is None:
         return (False, False)
     lm = results.pose_landmarks.landmark
-    h, w = frame_shape
-    sw = shoulder_width(results)
-    sw_px = sw * w if sw else None
+    ls, rs = _get_shoulders(results)
+    sw_ac = _ac_dist((ls.x, ls.y), (rs.x, rs.y), frame_shape) if ls and rs else None
     out = []
     for shoulder_idx, elbow_idx, wrist_idx, side in (
             (L_SHOULDER, L_ELBOW, L_WRIST, 0),
@@ -585,9 +628,9 @@ def feed_calibrator(results, frame_shape, calibrator, vis_thresh=None):
         if sh is None or el is None or wr is None:
             out.append(calibrator.calibrated(side))
             continue
-        arm_px = (math.hypot((el[0]-sh[0])*w, (el[1]-sh[1])*h)
-                  + math.hypot((wr[0]-el[0])*w, (wr[1]-el[1])*h))
-        out.append(calibrator.update(side, arm_px, sw_px))
+        arm_ac = (_ac_dist(sh, el, frame_shape)
+                  + _ac_dist(el, wr, frame_shape))
+        out.append(calibrator.update(side, arm_ac, sw_ac))
     return tuple(out)
 
 def extract(results, frame_shape=None, neutral_lens=None):

@@ -51,23 +51,59 @@ def call_groq(raw_sentence, prompt_template=None, api_key=None):
         max_retries=cfg.GROQ_RETRIES + 1,
     )
     prompt = prompt_template.replace("{{Predict}}", raw_sentence)
-    resp = client.chat.completions.create(
+    # Qwen3 on Groq can stop inside an unclosed think block and return
+    # content="" with finish_reason=stop. That happens on every greedy
+    # (temperature=0) call when reasoning stays on. "none" skips the think
+    # block; a non-zero temperature is the fallback if the first call is empty.
+    qwen = "qwen" in cfg.GROQ_MODEL.lower()
+    kwargs = dict(
         model=cfg.GROQ_MODEL,
         messages=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": raw_sentence},
         ],
-        temperature=0,
+        temperature=0.2 if qwen else 0,
         top_p=1.0,
         max_tokens=256,
     )
-    text = (resp.choices[0].message.content or "").strip()
-    text = text.strip().strip('"').strip("'")
+    if qwen:
+        kwargs["reasoning_effort"] = "none"
+    resp = client.chat.completions.create(**kwargs)
+    text = _clean_text(_message_text(resp.choices[0].message))
+    if not text and qwen:
+        kwargs["temperature"] = 0.6
+        resp = client.chat.completions.create(**kwargs)
+        text = _clean_text(_message_text(resp.choices[0].message))
+    if not text:
+        raise RuntimeError(
+            f"Empty Groq response (finish_reason={resp.choices[0].finish_reason})"
+        )
+    return text
+
+
+def _clean_text(text):
+    text = (text or "").strip().strip('"').strip("'")
     if text.lower().startswith("output:"):
         text = text[7:].strip()
-    if not text:
-        raise RuntimeError(f"Empty Groq response: {resp}")
     return text
+
+
+def _message_text(message):
+    """Visible answer, or the reasoning field when content was left empty."""
+    text = (getattr(message, "content", None) or "").strip()
+    if text:
+        return text
+    for attr in ("reasoning", "reasoning_content"):
+        extra = getattr(message, attr, None)
+        if isinstance(extra, str) and extra.strip():
+            return extra.strip()
+    extra = getattr(message, "model_extra", None) or {}
+    if isinstance(extra, dict):
+        for key in ("reasoning", "reasoning_content"):
+            val = extra.get(key)
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+    return ""
 
 
 def cleanup_with_retries(raw_sentence, prompt_template, api_key):
@@ -119,6 +155,8 @@ class SmartSentence:
         self._last_sent = ""
         self._last_err_time = 0.0
         self._force_retry = False  # manual retry fires even when not inferring
+        self._gen = 0
+        self._inflight_gen = 0
 
     def set_result(self, raw_sent, cleaned):
         with self._lock:
@@ -139,6 +177,7 @@ class SmartSentence:
                 return False
             self.pending = True
             self._last_sent = raw_sent
+            self._inflight_gen = self._gen
             return True
 
     def retry_now(self):
@@ -164,6 +203,30 @@ class SmartSentence:
             self.pending = False
             self.error = None
             self._force_retry = False
+            self._gen += 1
+
+    def finish(self, raw_sent, cleaned):
+        """Store a worker result. Drops it if clear() ran while the call was in flight."""
+        with self._lock:
+            if self._inflight_gen != self._gen:
+                self.pending = False
+                return False
+            self.text = cleaned
+            self._last_sent = raw_sent
+            self.pending = False
+            self.error = None
+            self._force_retry = False
+            return True
+
+    def fail(self, msg):
+        """Store a worker error. Drops it if clear() ran while the call was in flight."""
+        with self._lock:
+            if self._inflight_gen != self._gen:
+                self.pending = False
+                return False
+            self.pending = False
+            self.error = msg
+            return True
 
     def read(self):
         with self._lock:
@@ -204,16 +267,16 @@ def smart_worker(get_sentence, smart, stop_event, is_active=None):
                         try:
                             cleaned = cleanup_with_retries(
                                 raw, prompt_template, api_key)
-                            smart.set_result(raw, cleaned)
-                            last_call = time.monotonic()
+                            if smart.finish(raw, cleaned):
+                                last_call = time.monotonic()
                         except Exception as e:  # keep old text, retry after interval
-                            smart.set_error(
-                                f"[{cfg.GROQ_MODEL}] {type(e).__name__}: {e}")
-                            with smart._lock:
-                                # allow retry of the SAME sentence after cooldown
-                                # (not only on next change)
-                                smart._last_sent = ""
-                                smart._last_err_time = time.monotonic()
+                            if smart.fail(
+                                    f"[{cfg.GROQ_MODEL}] {type(e).__name__}: {e}"):
+                                with smart._lock:
+                                    # allow retry of the SAME sentence after cooldown
+                                    # (not only on next change)
+                                    smart._last_sent = ""
+                                    smart._last_err_time = time.monotonic()
         time.sleep(cfg.SMART_POLL_INTERVAL)
 
 

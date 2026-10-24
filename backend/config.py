@@ -53,6 +53,11 @@ LABEL_MAP = {label: idx for idx, label in enumerate(ACTIONS)}
 N_SEQUENCES = 15          # number of video sequences per action
 SEQUENCE_LEN = 12        # frames per sequence
 
+# ── Frame normalisation (unified cross-device convention) ─────────────────
+FRAME_STD_SIZE = int(os.environ.get("FRAME_STD_SIZE", "640"))  # square letterbox canvas
+INGEST_PORT = int(os.environ.get("INGEST_PORT", "8765"))       # WebSocket /ws/stream
+SESSION_TTL = float(os.environ.get("SESSION_TTL", "60.0"))     # idle seconds before a stream session is dropped
+
 # ── MediaPipe ────────────────────────────────────────────────────────────────
 MIN_DETECTION_CONFIDENCE = 0.01  # hạ từ 0.5 → nhạy hơn, ít miss tay khi che khuất
 MIN_TRACKING_CONFIDENCE = 0.01   # hạ từ 0.5 → giữ track tay tốt hơn khi chuyển động nhanh
