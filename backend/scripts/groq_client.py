@@ -51,23 +51,59 @@ def call_groq(raw_sentence, prompt_template=None, api_key=None):
         max_retries=cfg.GROQ_RETRIES + 1,
     )
     prompt = prompt_template.replace("{{Predict}}", raw_sentence)
-    resp = client.chat.completions.create(
+    # Qwen3 on Groq can stop inside an unclosed think block and return
+    # content="" with finish_reason=stop. That happens on every greedy
+    # (temperature=0) call when reasoning stays on. "none" skips the think
+    # block; a non-zero temperature is the fallback if the first call is empty.
+    qwen = "qwen" in cfg.GROQ_MODEL.lower()
+    kwargs = dict(
         model=cfg.GROQ_MODEL,
         messages=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": raw_sentence},
         ],
-        temperature=0,
+        temperature=0.2 if qwen else 0,
         top_p=1.0,
         max_tokens=256,
     )
-    text = (resp.choices[0].message.content or "").strip()
-    text = text.strip().strip('"').strip("'")
+    if qwen:
+        kwargs["reasoning_effort"] = "none"
+    resp = client.chat.completions.create(**kwargs)
+    text = _clean_text(_message_text(resp.choices[0].message))
+    if not text and qwen:
+        kwargs["temperature"] = 0.6
+        resp = client.chat.completions.create(**kwargs)
+        text = _clean_text(_message_text(resp.choices[0].message))
+    if not text:
+        raise RuntimeError(
+            f"Empty Groq response (finish_reason={resp.choices[0].finish_reason})"
+        )
+    return text
+
+
+def _clean_text(text):
+    text = (text or "").strip().strip('"').strip("'")
     if text.lower().startswith("output:"):
         text = text[7:].strip()
-    if not text:
-        raise RuntimeError(f"Empty Groq response: {resp}")
     return text
+
+
+def _message_text(message):
+    """Visible answer, or the reasoning field when content was left empty."""
+    text = (getattr(message, "content", None) or "").strip()
+    if text:
+        return text
+    for attr in ("reasoning", "reasoning_content"):
+        extra = getattr(message, attr, None)
+        if isinstance(extra, str) and extra.strip():
+            return extra.strip()
+    extra = getattr(message, "model_extra", None) or {}
+    if isinstance(extra, dict):
+        for key in ("reasoning", "reasoning_content"):
+            val = extra.get(key)
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+    return ""
 
 
 def cleanup_with_retries(raw_sentence, prompt_template, api_key):

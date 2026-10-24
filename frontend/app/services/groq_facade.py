@@ -77,7 +77,9 @@ class FrontendGroqCaller:
             try:
                 cleaned = gc.retry_smart_sync(raw)
             except Exception as e:
-                return {"ok": False, "error": str(e)}
+                msg = f"{type(e).__name__}: {e}"
+                self._smart.set_error(msg)
+                return {"ok": False, "error": msg}
             self._smart.set_result(raw, cleaned)
             return {"ok": True}
         if not self._smart.retry_now():

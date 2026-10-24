@@ -2,6 +2,7 @@ import { pollState } from "./api/stateApi.js";
 import { startInference, stopInference } from "./api/inferenceApi.js";
 import { clearSentence } from "./api/sentencesApi.js";
 import { speakSmart, speakManualInput } from "./api/ttsApi.js";
+import { retrySmart } from "./api/smartApi.js";
 import { setGroqKey } from "./api/configApi.js";
 import { store } from "./store/store.js";
 import { renderStatus } from "./ui/statusView.js";
@@ -97,6 +98,21 @@ $("saveKeyBtn").addEventListener("click", async () => {
     clearKeyInput();
   } catch (e) {
     showKeyMessage(`(lỗi: ${e.message})`);
+  }
+});
+
+$("smartRetryBtn").addEventListener("click", async () => {
+  const btn = $("smartRetryBtn");
+  if (btn.disabled) return;
+  const raw = (store.state.sentence || []).join(" ").trim();
+  btn.disabled = true;
+  store.set({ smart_pending: true, smart_error: null });
+  try {
+    store.set(await retrySmart(raw));
+  } catch (e) {
+    store.set({ smart_pending: false, smart_error: e.message });
+  } finally {
+    btn.disabled = false;
   }
 });
 
