@@ -1,5 +1,5 @@
 {
-  "timestamp": "20261022_223214",
+  "timestamp": "20261024_125302",
   "model_file": "model.keras",
   "actions": [
     "diachi",
@@ -9,5 +9,6 @@
     "khoer",
     "khochiu",
     "tambiet"
-  ]
+  ],
+  "train_record": "train_record.json"
 }

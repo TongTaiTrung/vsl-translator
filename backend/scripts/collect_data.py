@@ -7,8 +7,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import argparse
 import cv2
+import json
 import numpy as np
-from vsl_translator.landmarks import create_model, detect, draw_landmarks_new, extract
+from vsl_translator.landmarks import (
+    create_model, detect, draw_landmarks_new, extract, normalize_frame,
+)
 import config as cfg
 
 
@@ -27,10 +30,17 @@ def main():
         default=cfg.N_SEQUENCES,
         help=f"Number of video sequences to capture (default: {cfg.N_SEQUENCES})",
     )
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="macbook",
+        help="Camera source label saved to meta.json per sequence (e.g. macbook, iphone)",
+    )
     args = parser.parse_args()
 
     action = args.action
     total_sequences = args.sequences
+    device = args.device
 
     print(f"Collecting data for action: '{action}' ({total_sequences} sequences of {cfg.SEQUENCE_LEN} frames)")
     action_root = os.path.join(cfg.DATA_DIR, action)
@@ -45,10 +55,14 @@ def main():
         for seq_no in range(start_idx, start_idx + total_sequences):
             cnt = 0
             zero_frames = 0
+            src_shape = None
             while cnt < cfg.SEQUENCE_LEN:
                 ret, frame = cap.read()
                 if not ret:
                     break
+                frame, meta = normalize_frame(frame)
+                if src_shape is None:
+                    src_shape = [meta["src_h"], meta["src_w"]]
                 img, results = detect(frame, model)
                 img = draw_landmarks_new(img, results)
                 status_text = f"Action: {action} | Seq {seq_no}/{start_idx + total_sequences - 1}"
@@ -92,6 +106,10 @@ def main():
                     return
 
             print(f"  Seq {seq_no}: {zero_frames}/{cfg.SEQUENCE_LEN} zero frames (missing/untrusted landmarks).")
+            dir_path = os.path.join(cfg.DATA_DIR, action, str(seq_no))
+            with open(os.path.join(dir_path, "meta.json"), "w") as f:
+                json.dump({"device": device, "src_shape": src_shape,
+                           "std_size": cfg.FRAME_STD_SIZE}, f)
 
     cap.release()
     cv2.destroyAllWindows()
