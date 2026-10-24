@@ -132,6 +132,7 @@ class Predictor:
         with self._lock:
             self.sentence.clear()
             self.last_committed = None
+        self.groq.clear()
 
     def retry_smart(self, raw_sentence=None):
         """Retry Groq cleanup for the sentence the frontend sends.

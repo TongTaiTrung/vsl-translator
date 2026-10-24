@@ -119,6 +119,8 @@ class SmartSentence:
         self._last_sent = ""
         self._last_err_time = 0.0
         self._force_retry = False  # manual retry fires even when not inferring
+        self._gen = 0
+        self._inflight_gen = 0
 
     def set_result(self, raw_sent, cleaned):
         with self._lock:
@@ -139,6 +141,7 @@ class SmartSentence:
                 return False
             self.pending = True
             self._last_sent = raw_sent
+            self._inflight_gen = self._gen
             return True
 
     def retry_now(self):
@@ -164,6 +167,30 @@ class SmartSentence:
             self.pending = False
             self.error = None
             self._force_retry = False
+            self._gen += 1
+
+    def finish(self, raw_sent, cleaned):
+        """Store a worker result. Drops it if clear() ran while the call was in flight."""
+        with self._lock:
+            if self._inflight_gen != self._gen:
+                self.pending = False
+                return False
+            self.text = cleaned
+            self._last_sent = raw_sent
+            self.pending = False
+            self.error = None
+            self._force_retry = False
+            return True
+
+    def fail(self, msg):
+        """Store a worker error. Drops it if clear() ran while the call was in flight."""
+        with self._lock:
+            if self._inflight_gen != self._gen:
+                self.pending = False
+                return False
+            self.pending = False
+            self.error = msg
+            return True
 
     def read(self):
         with self._lock:
@@ -204,16 +231,16 @@ def smart_worker(get_sentence, smart, stop_event, is_active=None):
                         try:
                             cleaned = cleanup_with_retries(
                                 raw, prompt_template, api_key)
-                            smart.set_result(raw, cleaned)
-                            last_call = time.monotonic()
+                            if smart.finish(raw, cleaned):
+                                last_call = time.monotonic()
                         except Exception as e:  # keep old text, retry after interval
-                            smart.set_error(
-                                f"[{cfg.GROQ_MODEL}] {type(e).__name__}: {e}")
-                            with smart._lock:
-                                # allow retry of the SAME sentence after cooldown
-                                # (not only on next change)
-                                smart._last_sent = ""
-                                smart._last_err_time = time.monotonic()
+                            if smart.fail(
+                                    f"[{cfg.GROQ_MODEL}] {type(e).__name__}: {e}"):
+                                with smart._lock:
+                                    # allow retry of the SAME sentence after cooldown
+                                    # (not only on next change)
+                                    smart._last_sent = ""
+                                    smart._last_err_time = time.monotonic()
         time.sleep(cfg.SMART_POLL_INTERVAL)
 
 

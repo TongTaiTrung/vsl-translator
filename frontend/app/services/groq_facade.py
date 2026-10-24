@@ -49,6 +49,10 @@ class FrontendGroqCaller:
         """Return (text, pending, error) of the cleaned sentence."""
         return self._smart.read()
 
+    def clear(self):
+        """Drop the cleaned sentence immediately (reset)."""
+        self._smart.clear()
+
     def clear_if_empty(self, sentence):
         """Clear stale smart text when there is no raw sentence."""
         if not sentence:
