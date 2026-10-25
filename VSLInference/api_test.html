@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>VSLInference API Test</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 24px auto; padding: 0 16px; }
+  video { width: 100%; background: #000; border-radius: 8px; }
+  button { padding: 10px 18px; font-size: 15px; margin: 6px 6px 6px 0; cursor: pointer; }
+  #status { margin: 12px 0; font-weight: bold; }
+  .bar { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .bar .name { width: 90px; }
+  .bar .track { flex: 1; background: #eee; height: 18px; border-radius: 4px; overflow: hidden; }
+  .bar .fill { height: 100%; background: #2a9d48; }
+  .bar .val { width: 60px; text-align: right; }
+  input[type=text] { width: 100%; padding: 8px; margin-bottom: 8px; box-sizing: border-box; }
+</style>
+</head>
+<body>
+<h1>VSLInference API Test</h1>
+
+<label>API base URL:</label>
+<input type="text" id="apiUrl" value="http://127.0.0.1:8001">
+
+<div>
+  <button id="btnHealth">Check /health</button>
+  <button id="btnCamera">Mở camera</button>
+  <button id="btnCapture" disabled>Chụp 12 frames &amp; Predict</button>
+</div>
+
+<video id="video" autoplay playsinline muted></video>
+<div id="status">Chưa kết nối.</div>
+<h2 id="result"></h2>
+<div id="probs"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const api = () => $('apiUrl').value.replace(/\/$/, '');
+
+$('btnHealth').onclick = async () => {
+  try {
+    const r = await fetch(api() + '/health');
+    const j = await r.json();
+    $('status').textContent = 'Health: ' + JSON.stringify(j);
+  } catch (e) {
+    $('status').textContent = 'Lỗi kết nối: ' + e + ' (server đã chạy chưa?)';
+  }
+};
+
+$('btnCamera').onclick = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    $('video').srcObject = stream;
+    $('btnCapture').disabled = false;
+    $('status').textContent = 'Camera sẵn sàng.';
+  } catch (e) {
+    $('status').textContent = 'Không mở được camera: ' + e;
+  }
+};
+
+function grabFrame() {
+  const v = $('video');
+  const c = document.createElement('canvas');
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+  // predict_bytes chấp nhận data-URL nguyên dạng canvas.toDataURL()
+  return c.toDataURL('image/jpeg', 0.85);
+}
+
+$('btnCapture').onclick = async () => {
+  const frames = [];
+  $('btnCapture').disabled = true;
+  for (let i = 0; i < 12; i++) {
+    frames.push(grabFrame());
+    $('status').textContent = `Đang chụp frame ${i + 1}/12...`;
+    await new Promise(r => setTimeout(r, 120)); // giãn ~120ms giữa các frame
+  }
+  $('status').textContent = 'Đang gửi API...';
+  try {
+    const r = await fetch(api() + '/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ frames }),
+    });
+    const j = await r.json();
+    if (!r.ok || !j.ok) {
+      $('status').textContent = 'API lỗi: ' + (j.error || r.status);
+    } else {
+      $('status').textContent = 'Xong.';
+      $('result').textContent =
+        (j.label === '' ? '(không nhận diện)' : j.label) +
+        ' — ' + (j.confidence * 100).toFixed(1) + '%';
+      $('probs').innerHTML = '';
+      const names = window._labels || j.probs.map((_, i) => 'class_' + i);
+      j.probs.forEach((p, i) => {
+        const row = document.createElement('div');
+        row.className = 'bar';
+        row.innerHTML = `<span class="name">${names[i] ?? i}</span>
+          <span class="track"><span class="fill" style="width:${(p * 100).toFixed(1)}%"></span></span>
+          <span class="val">${(p * 100).toFixed(1)}%</span>`;
+        $('probs').appendChild(row);
+      });
+    }
+  } catch (e) {
+    $('status').textContent = 'Lỗi kết nối: ' + e;
+  }
+  $('btnCapture').disabled = false;
+};
+
+// Lấy labels một lần để hiển thị tên class
+fetch(api() + '/health').then(r => r.json()).then(j => {
+  if (j.labels) window._labels = j.labels;
+}).catch(() => {});
+</script>
+</body>
+</html>

@@ -8,6 +8,9 @@ backend/, no sys.path manipulation.
 import json
 import os
 
+import base64
+
+import cv2
 import numpy as np
 from keras import ops
 from keras.layers import Layer
@@ -201,6 +204,45 @@ class VSLInference:
                     "probs": [float(p) for p in probs]}
         return {"label": str(self._labels[best_idx]), "confidence": conf,
                 "probs": [float(p) for p in probs]}
+
+    @staticmethod
+    def _decode_one(raw, index):
+        """Decode one raw image (bytes or base64 str) to a BGR MatLike."""
+        if isinstance(raw, str):
+            if "," in raw and raw.startswith("data:"):
+                raw = raw.split(",", 1)[1]
+            try:
+                raw = base64.b64decode(raw, validate=True)
+            except Exception:
+                raise ValueError(
+                    f"frames[{index}] is not valid base64 image data.")
+        if not isinstance(raw, (bytes, bytearray, memoryview)):
+            raise ValueError(
+                f"frames[{index}] must be raw image bytes or a base64 "
+                f"string, got {type(raw).__name__}.")
+        buf = np.frombuffer(raw, dtype=np.uint8)
+        frame = cv2.imdecode(buf, cv2.IMREAD_COLOR)
+        if frame is None:
+            raise ValueError(
+                f"frames[{index}] could not be decoded as an image "
+                f"(need JPEG/PNG bytes).")
+        return frame
+
+    def predict_bytes(self, frames):
+        """Classify 12 raw image bytes. Returns {"label", "confidence", "probs"}.
+
+        Accepts a list/tuple of exactly SEQUENCE_LEN items, each raw
+        JPEG/PNG bytes (as sent by a webapp) or a base64 string of them.
+        Decodes to BGR MatLike via cv2.imdecode, then runs predict().
+        """
+        if (not isinstance(frames, (list, tuple))
+                or len(frames) != cfg.SEQUENCE_LEN):
+            raise ValueError(
+                f"frames must be a list of exactly {cfg.SEQUENCE_LEN} "
+                f"raw images, got "
+                f"{len(frames) if isinstance(frames, (list, tuple)) else type(frames)}.")
+        decoded = [self._decode_one(raw, i) for i, raw in enumerate(frames)]
+        return self.predict(decoded)
 
     def close(self):
         """Release the MediaPipe holistic object. Idempotent."""
