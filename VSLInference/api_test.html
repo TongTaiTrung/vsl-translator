@@ -2,11 +2,12 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<title>VSLInference API Test</title>
+<title>VSLInference API Test (on-device extract)</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 640px; margin: 24px auto; padding: 0 16px; }
   video { width: 100%; background: #000; border-radius: 8px; }
   button { padding: 10px 18px; font-size: 15px; margin: 6px 6px 6px 0; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: default; }
   #status { margin: 12px 0; font-weight: bold; }
   .bar { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
   .bar .name { width: 90px; }
@@ -18,6 +19,9 @@
 </head>
 <body>
 <h1>VSLInference API Test</h1>
+<p>Landmarks được trích xuất <b>trên trình duyệt</b> (logic VSL trong
+<code>vsl.js</code> + <code>extract.js</code>, port của
+<code>vsl2/landmarks.py</code>), server chỉ nhận 12 vector 356-dim.</p>
 
 <label>API base URL:</label>
 <input type="text" id="apiUrl" value="http://127.0.0.1:8001">
@@ -26,91 +30,148 @@
   <button id="btnHealth">Check /health</button>
   <button id="btnCamera">Mở camera</button>
   <button id="btnCapture" disabled>Chụp 12 frames &amp; Predict</button>
+  <button id="btnLive" disabled>Bắt đầu Live</button>
 </div>
 
 <video id="video" autoplay playsinline muted></video>
-<div id="status">Chưa kết nối.</div>
+<div id="status">Đang tải MediaPipe...</div>
 <h2 id="result"></h2>
+<div id="sentence" style="font-size:18px; margin:8px 0; min-height:1.5em; color:#333;"></div>
 <div id="probs"></div>
 
 <script>
+window.addEventListener('error', (e) => {
+  const el = document.getElementById('status');
+  if (el && /MediaPipe|đang tải/i.test(el.textContent || ''))
+    el.textContent = 'Lỗi tải module: ' + (e.message || e.error);
+}, true);
+</script>
+<script type="module">
 const $ = id => document.getElementById(id);
 const api = () => $('apiUrl').value.replace(/\/$/, '');
 
+let initMediaPipe, captureSequence, predictSequence, fetchLabels, startLive, stopLive;
+try {
+  ({ initMediaPipe, captureSequence, predictSequence, fetchLabels, startLive, stopLive } =
+    await import('./vsl.js'));
+} catch (e) {
+  $('status').textContent =
+    'Không import được vsl.js (mở file qua file:// sẽ bị chặn ES module — hãy serve thư mục qua http, vd: python3 -m http.server) : ' + e;
+  throw e;
+}
+
+try {
+  await initMediaPipe(({ stage, detail, elapsedMs }) => {
+    const t = (elapsedMs / 1000).toFixed(1) + 's';
+    const msg = {
+      'wasm-start': 'Đang tải WASM runtime...',
+      'wasm-done': `WASM xong (${t}). Đang tải model pose (heavy)...`,
+      'pose-start': 'Đang tải model pose (file lớn nhất, chờ lâu nhất)...',
+      'pose-done': `Pose xong (${t}). Đang tải model hand...`,
+      'hand-start': 'Đang tải model hand...',
+      'hand-done': `Hand xong (${t}). Đang khởi tạo GPU...`,
+      'ready': `MediaPipe sẵn sàng (tổng ${t}). Mở camera để bắt đầu.`,
+    }[stage] || stage;
+    $('status').textContent = detail ? `${msg} ${detail}` : msg;
+  });
+  $('status').textContent = 'MediaPipe sẵn sàng. Mở camera để bắt đầu.';
+} catch (e) {
+  $('status').textContent = 'Không tải được MediaPipe: ' + e;
+}
+
 $('btnHealth').onclick = async () => {
   try {
-    const r = await fetch(api() + '/health');
-    const j = await r.json();
-    $('status').textContent = 'Health: ' + JSON.stringify(j);
+    $('status').textContent = 'Health: ' + JSON.stringify(await fetchLabels(api()));
   } catch (e) {
     $('status').textContent = 'Lỗi kết nối: ' + e + ' (server đã chạy chưa?)';
   }
 };
+
+$('btnCapture').onclick = async () => {
+  const video = $('video');
+  $('btnCapture').disabled = true;
+  const { features, anyHand } = await captureSequence(video, {
+    onProgress: (i, n) => { $('status').textContent = `Đang extract frame ${i}/${n} (on-device)...`; },
+  });
+  if (!anyHand) {
+    $('status').textContent = 'Không thấy tay trong 12 frames.';
+    $('btnCapture').disabled = false;
+    return;
+  }
+  $('status').textContent = 'Đang gửi 12 vector đặc trưng lên API...';
+  try {
+    const j = await predictSequence(features, api());
+    $('status').textContent = 'Xong (extract on-device, server chỉ predict).';
+    renderProbs(j);
+  } catch (e) {
+    $('status').textContent = 'API lỗi: ' + e.message;
+  }
+  $('btnCapture').disabled = false;
+};
+
+fetchLabels(api()).then(l => { window._labels = l; }).catch(() => {});
+
+// ── Live stream: sliding window predict liên tục + chốt câu ──
+let liveState = null;
+const sentence = [];
+let lastLive = '', stableCount = 0;
+
+function renderProbs(j) {
+  $('result').textContent =
+    (j.label === '' ? '(không nhận diện)' : j.label) +
+    ' — ' + (j.confidence * 100).toFixed(1) + '%';
+  $('probs').innerHTML = '';
+  const names = window._labels || j.probs.map((_, i) => 'class_' + i);
+  j.probs.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'bar';
+    row.innerHTML = `<span class="name">${names[i] ?? i}</span>
+      <span class="track"><span class="fill" style="width:${(p * 100).toFixed(1)}%"></span></span>
+      <span class="val">${(p * 100).toFixed(1)}%</span>`;
+    $('probs').appendChild(row);
+  });
+}
 
 $('btnCamera').onclick = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     $('video').srcObject = stream;
     $('btnCapture').disabled = false;
+    $('btnLive').disabled = false;
     $('status').textContent = 'Camera sẵn sàng.';
   } catch (e) {
     $('status').textContent = 'Không mở được camera: ' + e;
   }
 };
 
-function grabFrame() {
-  const v = $('video');
-  const c = document.createElement('canvas');
-  c.width = v.videoWidth; c.height = v.videoHeight;
-  c.getContext('2d').drawImage(v, 0, 0);
-  // predict_bytes chấp nhận data-URL nguyên dạng canvas.toDataURL()
-  return c.toDataURL('image/jpeg', 0.85);
-}
-
-$('btnCapture').onclick = async () => {
-  const frames = [];
-  $('btnCapture').disabled = true;
-  for (let i = 0; i < 12; i++) {
-    frames.push(grabFrame());
-    $('status').textContent = `Đang chụp frame ${i + 1}/12...`;
-    await new Promise(r => setTimeout(r, 120)); // giãn ~120ms giữa các frame
+$('btnLive').onclick = () => {
+  if (liveState) {
+    stopLive(liveState);
+    liveState = null;
+    $('btnLive').textContent = 'Bắt đầu Live';
+    $('status').textContent = 'Đã dừng live. Câu: ' + (sentence.join(' ') || '(trống)');
+    return;
   }
-  $('status').textContent = 'Đang gửi API...';
-  try {
-    const r = await fetch(api() + '/predict', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ frames }),
-    });
-    const j = await r.json();
-    if (!r.ok || !j.ok) {
-      $('status').textContent = 'API lỗi: ' + (j.error || r.status);
-    } else {
-      $('status').textContent = 'Xong.';
-      $('result').textContent =
-        (j.label === '' ? '(không nhận diện)' : j.label) +
-        ' — ' + (j.confidence * 100).toFixed(1) + '%';
-      $('probs').innerHTML = '';
-      const names = window._labels || j.probs.map((_, i) => 'class_' + i);
-      j.probs.forEach((p, i) => {
-        const row = document.createElement('div');
-        row.className = 'bar';
-        row.innerHTML = `<span class="name">${names[i] ?? i}</span>
-          <span class="track"><span class="fill" style="width:${(p * 100).toFixed(1)}%"></span></span>
-          <span class="val">${(p * 100).toFixed(1)}%</span>`;
-        $('probs').appendChild(row);
-      });
-    }
-  } catch (e) {
-    $('status').textContent = 'Lỗi kết nối: ' + e;
-  }
-  $('btnCapture').disabled = false;
+  sentence.length = 0;
+  lastLive = ''; stableCount = 0;
+  $('sentence').textContent = '';
+  liveState = startLive($('video'), {
+    apiBase: api(),
+    onResult: (j) => {
+      // chốt từ khi cùng label đủ STABLE_FRAMES lần liên tiếp
+      if (j.label && j.label === lastLive) stableCount++;
+      else { lastLive = j.label; stableCount = j.label ? 1 : 0; }
+      if (stableCount >= 2 && sentence[sentence.length - 1] !== j.label) {
+        sentence.push(j.label);
+        $('sentence').textContent = sentence.join(' ');
+      }
+      renderProbs(j);
+      $('status').textContent = 'Live: ' + (sentence.join(' ') || '…');
+    },
+    onError: (e) => { $('status').textContent = 'Live lỗi: ' + (e.message || e); },
+  });
+  $('btnLive').textContent = 'Dừng Live';
 };
-
-// Lấy labels một lần để hiển thị tên class
-fetch(api() + '/health').then(r => r.json()).then(j => {
-  if (j.labels) window._labels = j.labels;
-}).catch(() => {});
 </script>
 </body>
 </html>

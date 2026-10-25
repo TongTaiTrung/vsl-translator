@@ -1,14 +1,16 @@
 """HTTP inference server for VSLInference (stdlib only, no extra deps).
 
-Local webapps POST 12 raw image frames and get back the prediction:
+Webapps extract landmarks in-browser and POST 12 featurized vectors:
+
+    POST /predict   {"features": [[float x356], ... x12]}
+    -> 200 {"ok": true, "label": str, "confidence": float, "probs": [...]}
+
+Legacy raw-image input is still accepted:
 
     POST /predict   {"frames": ["<base64 jpeg/png>", ... x12]}
-    -> 200 {"label": str, "confidence": float, "probs": [float, ...]}
 
     GET  /health    -> 200 {"ok": true, "labels": [...]}
 
-Each item in "frames" is a base64 JPEG/PNG image; a data-URL prefix
-("data:image/jpeg;base64,...", as produced by canvas.toDataURL) is accepted.
 Errors return non-200 {"ok": false, "error": "..."}.
 
 Run:  python -m VSLInference.server --model /path/to/model.keras [--port 8001]
@@ -88,9 +90,23 @@ class Handler(BaseHTTPRequestHandler):
                        status=400)
             return
         frames = payload.get("frames") if isinstance(payload, dict) else None
+        features = payload.get("features") if isinstance(payload, dict) else None
+        if features is not None:
+            try:
+                out = _vsl.predict_features(features)
+            except (ValueError, RuntimeError) as e:
+                _send_json(self, {"ok": False, "error": str(e)}, status=400)
+                return
+            except Exception as e:  # noqa: BLE001 — never leak a traceback
+                _send_json(self, {"ok": False,
+                                  "error": f"inference failed: {e}"}, status=500)
+                return
+            _send_json(self, {"ok": True, **out})
+            return
         if frames is None:
             _send_json(self, {"ok": False,
-                              "error": 'missing "frames": list of 12 base64 images'},
+                              "error": 'missing "features" (12x356) or '
+                                       '"frames": list of 12 base64 images'},
                        status=400)
             return
         try:
