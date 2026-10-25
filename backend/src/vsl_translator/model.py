@@ -86,17 +86,13 @@ def build_model(n_actions, sequence_len=cfg.SEQUENCE_LEN, n_features=None):
     Returns:
         A compiled Keras functional Model.
     """
-    from vsl_translator.landmarks import (
-        POSE_DIM, HAND_DIM, ARM_DEPTH_DIM, BODY_ONLY_DIM,
-    )
+    from vsl_translator.landmarks import BODY_ONLY_DIM, slice_bounds
     if n_features is None:
         n_features = BODY_ONLY_DIM
     assert n_features == BODY_ONLY_DIM, (
         f"build_model expects the 356-dim canonical layout, got {n_features}"
     )
-    pose_end = POSE_DIM                      # 18
-    hands_end = POSE_DIM + HAND_DIM * 2      # 102
-    depths_end = hands_end + ARM_DEPTH_DIM   # 104
+    pose_end, hands_end, depths_end, _, _ = slice_bounds()
 
     inp = Input(shape=(sequence_len, n_features))
     x = Masking(mask_value=0.0)(inp)

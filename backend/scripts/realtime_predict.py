@@ -29,7 +29,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 import cv2
 import numpy as np
-from keras.models import load_model
 
 import config as cfg
 from scripts.overlay import (
@@ -71,20 +70,15 @@ from scripts.groq_client import (
 
 def main():
     # ── Load model ────────────────────────────────────────────────────────────
-    model_path = os.path.join(cfg.MODELS_DIR, cfg.MODEL_FILENAME)
-    if not os.path.exists(model_path):
-        print(f"Model not found at '{model_path}'. Run scripts/train.py first.")
+    from scripts._common import load_classifier
+    try:
+        model, feat_mean, feat_std = load_classifier()
+    except FileNotFoundError as e:
+        print(e)
         return
-    model = load_model(model_path)
-
-    # ── Load feature standardisation stats ────────────────────────────────────
-    stats_path = os.path.join(cfg.MODELS_DIR, "feature_stats.npz")
-    if os.path.exists(stats_path):
-        stats = np.load(stats_path)
-        feat_mean, feat_std = stats["mean"], stats["std"]
+    if feat_mean is not None:
         print("Feature stats loaded for standardisation.")
     else:
-        feat_mean, feat_std = None, None
         print("WARNING: feature_stats.npz not found – running without standardisation.")
 
     print("Model loaded. Press 'q' in the video window to quit.")

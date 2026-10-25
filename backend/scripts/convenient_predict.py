@@ -37,18 +37,8 @@ def _ensure_model():
     global _MODEL, _FEAT_MEAN, _FEAT_STD
     if _MODEL is not None:
         return _MODEL, _FEAT_MEAN, _FEAT_STD
-    from keras.models import load_model
-    model_path = os.path.join(cfg.MODELS_DIR, cfg.MODEL_FILENAME)
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(
-            f"Model not found at '{model_path}'. Run scripts/train.py first.")
-    _MODEL = load_model(model_path)
-    stats_path = os.path.join(cfg.MODELS_DIR, "feature_stats.npz")
-    if os.path.exists(stats_path):
-        stats = np.load(stats_path)
-        _FEAT_MEAN, _FEAT_STD = stats["mean"], stats["std"]
-    else:
-        _FEAT_MEAN, _FEAT_STD = None, None
+    from scripts._common import load_classifier
+    _MODEL, _FEAT_MEAN, _FEAT_STD = load_classifier()
     return _MODEL, _FEAT_MEAN, _FEAT_STD
 
 
@@ -68,11 +58,10 @@ def predict_raw(frames):
         if not isinstance(f, np.ndarray) or f.ndim != 3:
             raise ValueError(f"frames[{i}] is not a valid BGR image ndarray.")
 
+    from scripts._common import extract_frame_vector, standardize
     from vsl_translator.landmarks import (
-        create_model, detect, extract, feed_calibrator,
-        ArmDepthCalibrator, ArmDepthSmoother,
+        create_model, detect, ArmDepthCalibrator, ArmDepthSmoother,
     )
-    from vsl_translator.dataset import standardize_features
 
     model, feat_mean, feat_std = _ensure_model()
     calibrator = ArmDepthCalibrator(warmup_frames=cfg.ARM_DEPTH_CAL_WARMUP)
@@ -87,18 +76,14 @@ def predict_raw(frames):
             has_hand = (results.left_hand_landmarks is not None
                         or results.right_hand_landmarks is not None)
             any_hand = any_hand or has_hand
-            feed_calibrator(results, frame.shape[:2], calibrator)
-            vec = extract(results, frame_shape=frame.shape[:2],
-                          neutral_lens=[calibrator.get(0), calibrator.get(1)])
-            vec[102:104] = [smoother.update(s, vec[102 + s]) for s in (0, 1)]
-            seq.append(vec)
+            seq.append(extract_frame_vector(results, frame.shape[:2],
+                                            calibrator, smoother))
 
     if not any_hand:
         return "", np.zeros(len(cfg.ACTIONS), dtype=np.float32)
 
     X = np.array([seq], dtype="float32")
-    if feat_mean is not None and feat_std is not None:
-        X, _, _ = standardize_features(X, mean=feat_mean, std=feat_std)
+    X = standardize(X, feat_mean, feat_std)
     probs = np.asarray(model.predict(X, verbose=0)[0], dtype=np.float32)
     best_idx = int(np.argmax(probs))
     if float(probs[best_idx]) < float(cfg.CONFIDENCE_THRESHOLD):
