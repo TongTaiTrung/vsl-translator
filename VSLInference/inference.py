@@ -1,89 +1,36 @@
-"""Standalone VSL inference: 12 OpenCV frames -> {label, confidence, probs}.
+"""Standalone VSL inference: 12 frames or 12 featurized vectors -> prediction.
 
-Self-contained: depends only on the vendored .landmarks module, ._config,
-and third-party packages (keras, mediapipe, opencv, numpy). No import from
-backend/, no sys.path manipulation.
+Inherits everything from vsl2: model layers (vsl2.model), feature extraction
+(vsl2.landmarks), standardization (vsl2.dataset) and config (vsl2.defaults).
+No vendored copies — loading a checkpoint uses the exact classes and
+pipeline it was trained with.
 """
 
+import base64
 import json
 import os
-
-import base64
+import sys
 
 import cv2
 import numpy as np
-from keras import ops
-from keras.layers import Layer
 from keras.models import load_model
-from keras.saving import register_keras_serializable
 
-from . import _config as cfg
-from .landmarks import (
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_PARENT = os.path.dirname(_HERE)
+if _PARENT not in sys.path:
+    sys.path.insert(0, _PARENT)
+
+from vsl2 import model as _vsl2_model
+from vsl2 import defaults as cfg
+from vsl2.landmarks import (
+    BODY_ONLY_DIM,
     ArmDepthCalibrator,
     ArmDepthSmoother,
-    BODY_ONLY_DIM,
     create_model,
     detect,
     extract,
     feed_calibrator,
 )
-
-
-@register_keras_serializable(package="vsl")
-class WeightedMean(Layer):
-    """Attention weighted mean over the time axis (vendored from backend)."""
-
-    def call(self, inputs, mask=None):
-        x, scores = inputs
-        if mask is not None:
-            m = mask[0] if isinstance(mask, (list, tuple)) else mask
-            if m is not None:
-                m = ops.cast(m, scores.dtype)[..., None]
-                scores = scores + (1.0 - m) * -1e9
-        weights = ops.softmax(scores, axis=1)
-        return ops.sum(x * weights, axis=1)
-
-    def compute_mask(self, inputs, mask=None):
-        return None
-
-
-@register_keras_serializable(package="vsl")
-class FrameVelocity(Layer):
-    """Per-frame motion delta (vendored from backend)."""
-
-    def call(self, inputs, mask=None):
-        pad = ops.zeros_like(inputs[:, :1, :])
-        diff = ops.concatenate(
-            [pad, inputs[:, 1:, :] - inputs[:, :-1, :]], axis=1)
-        present = ops.any(inputs != 0.0, axis=-1, keepdims=True)
-        present_prev = ops.concatenate(
-            [ops.zeros_like(present[:, :1, :]), present[:, :-1, :]], axis=1)
-        valid = ops.logical_and(present, present_prev)
-        return ops.where(valid, diff, ops.zeros_like(diff))
-
-    def compute_mask(self, inputs, mask=None):
-        return mask
-
-
-@register_keras_serializable(package="vsl")
-class Slice(Layer):
-    """Feature-group slice passing the Masking mask through (vendored)."""
-
-    def __init__(self, start, end, **kwargs):
-        super().__init__(**kwargs)
-        self.start = start
-        self.end = end
-
-    def call(self, inputs):
-        return inputs[..., self.start:self.end]
-
-    def compute_mask(self, inputs, mask=None):
-        return mask
-
-    def get_config(self):
-        config = super().get_config()
-        config.update({"start": self.start, "end": self.end})
-        return config
 
 
 def _resolve_labels(model_path, n_outputs, labels=None):
@@ -118,23 +65,19 @@ def _resolve_labels(model_path, n_outputs, labels=None):
     return resolved
 
 
-_CUSTOM_OBJECTS = {"vsl>WeightedMean": WeightedMean, "vsl>Slice": Slice,
-                   "vsl>FrameVelocity": FrameVelocity}
+_CUSTOM_OBJECTS = {"vsl>WeightedMean": _vsl2_model.WeightedMean,
+                   "vsl>Slice": _vsl2_model.Slice,
+                   "vsl>FrameVelocity": _vsl2_model.FrameVelocity}
+
+
+from vsl2.dataset import standardize_features as _standardize_features
 
 
 def _standardize(X, mean, std):
-    """Per-feature standardization ignoring missing keypoints (0.0).
-
-    Vendored from backend dataset.standardize_features: (X - mean) / std,
-    then restore original zeros (Masking compatibility).
-    """
-    X_flat = X.reshape(-1, X.shape[-1]).astype(np.float32)
-    zero_mask = (X_flat == 0.0)
-    mean = np.asarray(mean, dtype=np.float32)
-    std = np.asarray(std, dtype=np.float32)
-    X_norm = (X_flat - mean) / std
-    X_norm[zero_mask] = 0.0
-    return X_norm.reshape(X.shape)
+    """Per-feature standardization ignoring missing keypoints (vsl2.dataset)."""
+    X_norm, _, _ = _standardize_features(
+        np.asarray(X, dtype=np.float32), mean=mean, std=std)
+    return np.asarray(X_norm, dtype=np.float32).reshape(X.shape)
 
 
 class VSLInference:
@@ -218,6 +161,10 @@ class VSLInference:
                     "probs": [0.0] * n}
 
         X = np.array([seq], dtype="float32")
+        return self._run_model(X)
+
+    def _run_model(self, X):
+        """Standardize a (1, 12, 356) batch-of-one → model → label dict."""
         if self._feat_mean is not None and self._feat_std is not None:
             X = _standardize(X, self._feat_mean, self._feat_std)
         probs = np.asarray(self._model.predict(X, verbose=0)[0], dtype=np.float32)
@@ -228,6 +175,27 @@ class VSLInference:
                     "probs": [float(p) for p in probs]}
         return {"label": str(self._labels[best_idx]), "confidence": conf,
                 "probs": [float(p) for p in probs]}
+
+    def predict_features(self, vectors):
+        """Classify 12 pre-extracted 356-dim feature vectors.
+
+        Same vsl2 feature contract as predict() produces internally
+        (pose [0:18] | lh [18:60] | rh [60:102] | arm_depths [102:104] |
+        sh_off_lh [104:230] | sh_off_rh [230:356]). Skips MediaPipe
+        entirely — for clients (e.g. the webapp) that extract landmarks
+        themselves. Returns {"label", "confidence", "probs"}.
+        """
+        if self._closed:
+            raise RuntimeError("VSLInference is closed.")
+        X = np.asarray(vectors, dtype=np.float32)
+        if X.shape != (cfg.SEQUENCE_LEN, BODY_ONLY_DIM):
+            raise ValueError(
+                f"features must have shape ({cfg.SEQUENCE_LEN}, "
+                f"{BODY_ONLY_DIM}), got {X.shape}.")
+        if not np.any(X):
+            return {"label": "", "confidence": 0.0,
+                    "probs": [0.0] * len(self._labels)}
+        return self._run_model(X[None, :, :])
 
     @staticmethod
     def _decode_one(raw, index):

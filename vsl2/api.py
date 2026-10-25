@@ -43,12 +43,18 @@ class VSL2:
 
     # ── Predict ──────────────────────────────────────────────────────────
     def predict(self, source, **kwargs):
-        """Batch predict: video file path or folder of images.
+        """Batch predict: video path, image folder, seq dir, or 12 vectors.
 
+        Feature input: list of 12 (356,) arrays or a (12, 356) ndarray.
         Returns {"raw": word, "probs": [...]}.
         """
         from .predict import predict as _predict
         return _predict(source, model_path=self.weights, **kwargs)
+
+    def predict_features(self, vectors, **kwargs):
+        """Predict directly over 12 featurized vectors. No MediaPipe run."""
+        from .predict import predict_features as _pf
+        return _pf(vectors, model_path=self.weights, **kwargs)
 
     def predict_live(self, **kwargs):
         """Webcam realtime loop (blocks until 'q'). Returns sentence list."""

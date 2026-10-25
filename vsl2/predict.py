@@ -119,15 +119,82 @@ def predict_raw(frames, model_path=None):
     return str(cfg.ACTIONS[best_idx]), probs
 
 
-def predict(source, model_path=None):
-    """Predict over a video file or a folder of images.
+def _as_feature_matrix(vectors):
+    """Normalize 12 featurized vectors to a (12, 356) float32 array.
 
-    Reads up to SEQUENCE_LEN frames, runs predict_raw. Returns
-    {"raw": word, "probs": [...]}.
+    Accepts a (12, 356) ndarray or a list/tuple of 12 (356,) arrays.
+    Raises ValueError on wrong count or wrong feature dim.
+    """
+    X = np.asarray(vectors, dtype="float32")
+    if X.shape != (cfg.SEQUENCE_LEN, BODY_ONLY_DIM):
+        raise ValueError(
+            f"features must have shape ({cfg.SEQUENCE_LEN}, {BODY_ONLY_DIM}), "
+            f"got {X.shape}.")
+    return X
+
+
+def _decode_probs(probs):
+    """Softmax vector → (word, probs); "" when below confidence threshold."""
+    probs = np.asarray(probs, dtype=np.float32).ravel()
+    best_idx = int(np.argmax(probs))
+    if float(probs[best_idx]) < float(cfg.CONFIDENCE_THRESHOLD):
+        return "", probs
+    return str(cfg.ACTIONS[best_idx]), probs
+
+
+def predict_features(vectors, model_path=None):
+    """Predict over 12 featurized vectors. Returns {"raw", "probs"}.
+
+    Skips MediaPipe entirely: stacks the vectors, standardizes with train
+    stats (zero-mask preserved), runs the model. Returns "" when every
+    vector is zero (no hand) or confidence is below threshold.
+    """
+    X = _as_feature_matrix(vectors)
+    if not np.any(X):
+        return {"raw": "",
+                "probs": [0.0] * len(cfg.ACTIONS)}
+    model, feat_mean, feat_std = _ensure_model(model_path)
+    Xs = standardize(X[None, :, :], feat_mean, feat_std)
+    probs = np.asarray(model.predict(Xs, verbose=0)[0], dtype=np.float32)
+    raw, probs = _decode_probs(probs)
+    return {"raw": raw, "probs": [float(p) for p in probs]}
+
+
+def _load_seq_features(seq_dir):
+    """Load 0..11.npy from a sequence dir. Returns list of 12 arrays."""
+    vecs = []
+    for i in range(cfg.SEQUENCE_LEN):
+        path = os.path.join(seq_dir, f"{i}.npy")
+        if not os.path.isfile(path):
+            return None
+        vecs.append(np.load(path))
+    return vecs
+
+
+def _looks_like_features(source):
+    """True if source is 12 feature vectors (not 12 BGR images)."""
+    if isinstance(source, np.ndarray):
+        return source.ndim == 2
+    if isinstance(source, (list, tuple)) and len(source) == cfg.SEQUENCE_LEN:
+        first = source[0]
+        return isinstance(first, np.ndarray) and first.ndim == 1
+    return False
+
+
+def predict(source, model_path=None):
+    """Predict over a video file, a folder of images, or 12 feature vectors.
+
+    Feature input: list of 12 (356,) arrays, a (12, 356) ndarray, or a
+    sequence dir holding 0..11.npy. Returns {"raw": word, "probs": [...]}.
     """
     import cv2
     import glob as _glob
-    if os.path.isdir(source):
+    if _looks_like_features(source):
+        return predict_features(source, model_path=model_path)
+    if isinstance(source, str) and os.path.isdir(source):
+        vecs = _load_seq_features(source)
+        if vecs is not None:
+            return predict_features(vecs, model_path=model_path)
         paths = sorted(_glob.glob(os.path.join(source, "*")))
         imgs = [cv2.imread(p) for p in paths[:cfg.SEQUENCE_LEN]]
         imgs = [im for im in imgs if im is not None]

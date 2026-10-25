@@ -35,6 +35,11 @@ phạm vi Core ML).
 Mọi đường dẫn mặc định đều nằm trong `vsl2/` (`data/`, `weights/`,
 `actions.json`). Chạy mọi lệnh từ repo root.
 
+Checkpoint trong `vsl2/weights/` (`model.keras`, `feature_stats.npz`,
+`train_record.json`, `test_set.npz`) được copy từ `backend/models/` —
+cùng 8 class trong `actions.json`. Không train lại trong module này;
+muốn cập nhật model thì train ở backend rồi copy 4 file sang.
+
 ## Dùng nhanh (Python API)
 
 ```python
@@ -44,9 +49,13 @@ from vsl2 import VSL2
 m = VSL2()
 m.train(data="vsl2/data", epochs=50, augment_factor=8)
 
-# --- Batch predict: file video hoặc thư mục ảnh
+# --- Batch predict: file video, thư mục ảnh, thư mục seq, hoặc 12 vector đặc trưng
 out = VSL2("vsl2/weights/model.keras").predict("video.mp4")
 print(out["raw"], out["probs"])   # vd: "xinchao" [0.01, 0.95, ...]
+out = VSL2("vsl2/weights/model.keras").predict("vsl2/data/xinchao/1")  # seq dir 0..11.npy
+vecs = [np.load(f"vsl2/data/xinchao/1/{i}.npy") for i in range(12)]
+out = VSL2("vsl2/weights/model.keras").predict(vecs)        # auto-route
+out = VSL2("vsl2/weights/model.keras").predict_features(vecs)  # tường minh, bỏ qua MediaPipe
 
 # --- Webcam realtime (nhấn q để thoát), trả về list câu đã commit
 sentence = VSL2("vsl2/weights/model.keras").predict_live()
@@ -184,12 +193,15 @@ tập đánh giá chung với bản gốc.
 xác nhận (kèm xóa dữ liệu) rồi hỏi xóa model cũ. Sau mọi thay đổi class phải
 train lại.
 
-### predict — `m.predict(...)` / `vsl2 predict`
+### predict — `m.predict(...)` / `m.predict_features(...)` / `vsl2 predict`
 
 Batch inference trên đúng 12 frames (video → đọc 12 frame đầu; thư mục ảnh →
-12 ảnh đầu). Trả `{"raw": từ_dự_đoán_hoặc_rỗng, "probs": [...]}` — rỗng khi
-không thấy tay hoặc confidence dưới ngưỡng (`CONFIDENCE_THRESHOLD`, có thể
-override từng class qua `CLASS_THRESHOLDS`).
+12 ảnh đầu). **Mới:** nhận trực tiếp 12 vector featurized — list 12 mảng
+(356,), ndarray (12, 356), hoặc thư mục seq chứa `0..11.npy` — tự gộp,
+chuẩn hóa bằng train stats và cho model predict, bỏ qua MediaPipe hoàn toàn.
+Trả `{"raw": từ_dự_đoán_hoặc_rỗng, "probs": [...]}` — rỗng khi không thấy tay
+hoặc confidence dưới ngưỡng (`CONFIDENCE_THRESHOLD`, có thể override từng
+class qua `CLASS_THRESHOLDS`). Validate shape `(12, 356)`, sai → `ValueError`.
 
 ### predict_live — `m.predict_live(...)` / `vsl2 live`
 
