@@ -1,14 +1,15 @@
 {
-  "timestamp": "20261024_113124",
+  "timestamp": "20261025_155645",
   "model_file": "model.keras",
   "actions": [
-    "diachi",
     "camon",
     "xinchao",
     "toi",
     "khoer",
     "khochiu",
-    "tambiet"
+    "tambiet",
+    "tinhthanh",
+    "diachi"
   ],
   "train_record": "train_record.json"
 }

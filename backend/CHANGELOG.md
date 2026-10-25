@@ -1,4 +1,12 @@
 # Changelog
+## Chưa phát hành — Khung hình chuẩn 720 + upload 720p (2026-10-25)
+
+### Đã làm gì và tại sao
+- `backend/config.py`: `FRAME_STD_SIZE` 640 → 720 (square letterbox giữ nguyên, chỉ to hơn). Lý do KHÔNG làm 1280×720 chữ nhật: `aspect_correct()` và `_compute_arm_depth_ratio()` đều nhân `x` với `w/h`; đổi canvas sang chữ nhật (w/h = 1.78 thay vì 1.0) sẽ scale toàn bộ bone vector theo x, lệch phân bố feature canonical mà model + `feature_stats.npz` đã học → bắt buộc retrain và data cũ mất tương thích. Canvas vuông 720 giữ `w/h = 1.0` nên feature không đổi, model cũ chạy nguyên.
+- `VSLInference/_config.py`: `FRAME_STD_SIZE` 640 → 720 (giữ đồng bộ training/inference).
+- `frontend/static/js/ui/cameraCapture.js`: `MAX_W` 640 → 1280, `getUserMedia` ideal 640×480 → 1280×720. Upload gửi frame 720p lên server; server vẫn letterbox về vuông 720 rồi detect — MediaPipe nhận input nét hơn (scale 720p→720 là 0.5625 thay vì 640p→640), landmark ổn định hơn, khung debug hiển thị to rõ hơn.
+- Verify: `normalize_frame` cho mọi nguồn (480p, 720p, 1080p, vuông) đều ra canvas (720, 720, 3); data `.npy` cũ tương thích (pixel đã qua canonical hóa, không phụ thuộc kích thước canvas); test suite giữ nguyên 2 lỗi arm-depth tồn tại từ trước (đã kiểm tra bằng `git stash`).
+
 ## Chưa phát hành — Ổn định live (hysteresis + ngưỡng theo class) + preset augment strong (2026-10-25)
 
 ### Bối cảnh và mục đích

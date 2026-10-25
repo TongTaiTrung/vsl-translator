@@ -5,7 +5,7 @@ config used at training time.
 """
 
 SEQUENCE_LEN = 12
-FRAME_STD_SIZE = 640
+FRAME_STD_SIZE = 720
 
 # Fallback labels only — VSLInference resolves labels per model at runtime:
 # explicit `labels` arg > actions.json beside model > train_record.json beside

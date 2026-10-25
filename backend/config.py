@@ -54,7 +54,7 @@ N_SEQUENCES = 15          # number of video sequences per action
 SEQUENCE_LEN = 12        # frames per sequence
 
 # ── Frame normalisation (unified cross-device convention) ─────────────────
-FRAME_STD_SIZE = int(os.environ.get("FRAME_STD_SIZE", "640"))  # square letterbox canvas
+FRAME_STD_SIZE = int(os.environ.get("FRAME_STD_SIZE", "720"))  # square letterbox canvas (720 matches 720p height; keep square — rectangular canvas changes w/h and breaks canonical features)
 INGEST_PORT = int(os.environ.get("INGEST_PORT", "8765"))       # WebSocket /ws/stream
 SESSION_TTL = float(os.environ.get("SESSION_TTL", "60.0"))     # idle seconds before a stream session is dropped
 
@@ -103,8 +103,8 @@ TRAIN_RECORD_FILENAME = "train_record.json"  # hyperparameters + epoch history, 
 BATCH_SIZE = 16
 
 # ── Inference ────────────────────────────────────────────────────────────────
-CONFIDENCE_THRESHOLD = 0.70  # below this → "uncertain", no label emitted
-SMOOTHING_WINDOW = 5         # majority-vote window for live prediction
+CONFIDENCE_THRESHOLD = 0.60  # below this → "uncertain", no label emitted
+SMOOTHING_WINDOW = 3         # majority-vote window for live prediction
 SWITCH_STABLE_FRAMES = 2     # challenger must win N vote rounds in a row
                              # before replacing the current prediction
                              # (hysteresis against A↔B flicker on similar signs)
