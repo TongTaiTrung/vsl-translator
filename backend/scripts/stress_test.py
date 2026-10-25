@@ -21,7 +21,7 @@ import numpy as np
 from keras.models import load_model
 
 import config as cfg
-from vsl_translator.model import WeightedMean, Slice
+from vsl_translator.model import WeightedMean, Slice, FrameVelocity
 from vsl_translator.dataset import (
     standardize_features,
     _add_noise, _scale_jitter, _time_warp, _random_shift,
@@ -117,7 +117,8 @@ def main():
 
     model = load_model(model_path,
                        custom_objects={"vsl>WeightedMean": WeightedMean,
-                                       "vsl>Slice": Slice})
+                                       "vsl>Slice": Slice,
+                                       "vsl>FrameVelocity": FrameVelocity})
 
     def predict_raw(X):
         Xn, _, _ = standardize_features(

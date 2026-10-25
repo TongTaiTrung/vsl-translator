@@ -1,4 +1,33 @@
 # Changelog
+## Chưa phát hành — Masked attention + cân bằng luồng + velocity (arch v2, 2026-10-25)
+
+### Chẩn đoán (từ train_record baseline cùng ngày)
+- train_clean acc 1.0, val acc 0.889, gap +0.11; val confidence mean 0.72, 15/54 mẫu dưới 0.7.
+- Val confusion: `xinchao↔diachi` (mỗi chiều 1), `khoer→xinchao` (1), `toi→khochiu` (1), `khochiu→tambiet` (2). Test acc 0.963 nhưng test chỉ 54 mẫu (~1.85%/mẫu), nhiễu cao.
+- 3 điểm yếu: (1) `WeightedMean` softmax không trừ mask — frame zero vẫn ăn trọng số attention; (2) shoulder-offset 252/356 dim lấn át hand-shape sau concat; (3) thiếu kênh chuyển động tường minh, GRU tự học velocity từ 12 frame ngắn.
+
+### `backend/src/vsl_translator/model.py`
+- `WeightedMean.call(inputs, mask=None)`: cộng `-1e9` vào score của frame bị mask trước softmax (lấy `mask[0]`, cast đúng dtype, broadcast `[..., None]`). Frame miss/rớt không còn kéo lệch vector gộp. Docstring cập nhật mask-aware.
+- Layer mới `FrameVelocity` (`@register_keras_serializable`, có `compute_mask` truyền mask qua): `v[t] = x[t] − x[t−1]`, `v[0] = 0`; chỉ tính khi cả hai frame đều non-zero, còn lại zero. Tính trên slice RAW (pose 18 + tay 84) trước LayerNorm để zero pre-norm là zero thật.
+- Projection cân bằng luồng: pose → Dense 32, tay 84 → Dense 64, offset 252 → Dense 64, depths giữ 2; concat static 162 + motion (pose_v 18 + hands_v 84 → Dense 48) = 210 vào GRU. Offset không còn đè hand-shape bằng magnitude thô.
+- GRU backbone giữ 48/chiều; tổng params trainable 157.069 (tương đương bản cũ 171.313). Verify: build + predict `(2, 8)` + input nửa-mask không lỗi + save/reload `.keras` thành công.
+
+### `backend/config.py`
+- `INACTIVE_INJECT_PROB` 0.35 → 0.15: giảm bơm tay nghỉ giả làm các dấu một tay (`toi/khochiu/tambiet`) giống nhau hơn.
+- `EPOCHS` 500 → 200: khớp early stop thực tế dừng ~epoch 44 khi LR vẫn ~1e-3, để cosine decay kịp tác dụng.
+- `FOCAL_GAMMA` 2.0 → 1.0, `LABEL_SMOOTHING` 0.05 → 0.02: bớt tập trung vào outlier trên data cân bằng (~31 mẫu/class), bớt đè confidence.
+
+### Đồng bộ inference/load
+- `VSLInference/inference.py`: vendored `WeightedMean` masked + `FrameVelocity` mới + đăng ký trong `_CUSTOM_OBJECTS`.
+- `backend/scripts/profile_robustness.py`, `backend/scripts/stress_test.py`: import + `custom_objects` thêm `vsl>FrameVelocity` (model v2 không load được nếu thiếu).
+- Model cũ `model.keras` vẫn load với code mới (không đổi weights) nhưng được train bằng attention cũ → bắt buộc retrain để hưởng lợi.
+
+### Kết quả train arch v2 (record 2026-10-25T17:09, chưa recollect)
+- best val_loss 0.321 → 0.245 (epoch 35), val acc 0.889 → 0.907, gap +0.111 → +0.093.
+- Val confidence mean 0.72 → 0.89, mẫu dưới 0.7: 15 → 3.
+- Cụm `xinchao/diachi` sạch (val 7/7 cả hai); `khochiu` lên 7/7. Lỗi val còn lại dồn vào `tambiet`: `toi→tambiet` (1), `tambiet→toi` (2), `diachi→tambiet` (1).
+- Xấu đi: test acc 0.963 → 0.907 (2 → 5 lỗi/54 mẫu, cùng split seed 42); `tambiet` F1 = 0.714 cả val lẫn test, nhầm hai chiều với `toi`/`khochiu`. Nút thắt còn lại là data class này, không phải architecture.
+- Việc tiếp theo: recollect `tambiet` +15–20 seq (đa tốc độ/biên độ, 2 người/camera), `toi/khochiu/diachi` mỗi class ~10 seq; rồi đánh giá bằng `kfold_eval.py` thay vì một split 54 mẫu.
 ## Chưa phát hành — Khung hình chuẩn 720 + upload 720p (2026-10-25)
 
 ### Đã làm gì và tại sao

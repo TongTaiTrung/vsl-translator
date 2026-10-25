@@ -17,7 +17,7 @@ import numpy as np
 from keras.models import load_model
 
 import config as cfg
-from vsl_translator.model import WeightedMean, Slice
+from vsl_translator.model import WeightedMean, Slice, FrameVelocity
 from vsl_translator.dataset import (
     standardize_features,
     _add_noise, _scale_jitter, _time_warp, _random_shift,
@@ -77,7 +77,8 @@ def main():
     X_test, y_test = test["X"].astype(np.float32), test["y"]
     y_true = y_test.argmax(axis=1)
     MODEL = load_model(model_path, custom_objects={
-        "vsl>WeightedMean": WeightedMean, "vsl>Slice": Slice})
+        "vsl>WeightedMean": WeightedMean, "vsl>Slice": Slice,
+        "vsl>FrameVelocity": FrameVelocity})
 
     N = len(X_test)
     seeds = np.random.RandomState(7).randint(0, 10 ** 6, size=N)

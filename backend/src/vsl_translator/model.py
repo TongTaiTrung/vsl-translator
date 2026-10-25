@@ -21,18 +21,48 @@ import config as cfg
 class WeightedMean(Layer):
     """Attention weighted mean over the time axis (replaces last-state).
 
-    Softmax is computed with ops.softmax (mask-free) instead of a Softmax
-    layer, because the 2D padding mask is not broadcastable to the (B, T, 1)
-    score tensor.
+    Mask-aware: frames masked by Masking(0.0) get -1e9 added to their score
+    before softmax, so missing/dropped frames contribute ~zero weight.
+    Uses ops.softmax instead of a Softmax layer because the 2D padding mask
+    is not broadcastable to the (B, T, 1) score tensor.
     """
 
-    def call(self, inputs):
+    def call(self, inputs, mask=None):
         x, scores = inputs
+        if mask is not None:
+            m = mask[0] if isinstance(mask, (list, tuple)) else mask
+            if m is not None:
+                m = ops.cast(m, scores.dtype)[..., None]
+                scores = scores + (1.0 - m) * -1e9
         weights = ops.softmax(scores, axis=1)
         return ops.sum(x * weights, axis=1)
 
     def compute_mask(self, inputs, mask=None):
         return None
+
+
+@register_keras_serializable(package="vsl")
+class FrameVelocity(Layer):
+    """Per-frame motion delta: v[t] = x[t] - x[t-1], v[0] = 0.
+
+    A delta is only valid when both endpoints are present (non-zero);
+    otherwise the row is zeroed. Passes the Masking mask through so the
+    recurrent backbone still skips missing frames, and keeps genuine
+    static frames (v = 0 with mask present) distinguishable by the mask.
+    """
+
+    def call(self, inputs):
+        pad = ops.zeros_like(inputs[:, :1, :])
+        diff = ops.concatenate(
+            [pad, inputs[:, 1:, :] - inputs[:, :-1, :]], axis=1)
+        present = ops.any(inputs != 0.0, axis=-1, keepdims=True)
+        present_prev = ops.concatenate(
+            [ops.zeros_like(present[:, :1, :]), present[:, :-1, :]], axis=1)
+        valid = ops.logical_and(present, present_prev)
+        return ops.where(valid, diff, ops.zeros_like(diff))
+
+    def compute_mask(self, inputs, mask=None):
+        return mask
 
 
 @register_keras_serializable(package="vsl")
@@ -97,12 +127,31 @@ def build_model(n_actions, sequence_len=cfg.SEQUENCE_LEN, n_features=None):
     inp = Input(shape=(sequence_len, n_features))
     x = Masking(mask_value=0.0)(inp)
 
-    # ── Per-group input norm ───────────────────────────────────────────
-    pose_n = LayerNormalization()(Slice(0, pose_end)(x))
-    hands_n = LayerNormalization()(Slice(pose_end, hands_end)(x))
-    depths_n = LayerNormalization()(Slice(hands_end, depths_end)(x))
-    sh_n = LayerNormalization()(Slice(depths_end, n_features)(x))
-    x = Concatenate()([pose_n, hands_n, depths_n, sh_n])
+    # ── Per-group input norm + balance ────────────────────────────────
+    # Shoulder-offsets own 252/356 raw dims; without projection they dominate
+    # the GRU input energy and drown out hand-shape detail on similar signs.
+    pose = Slice(0, pose_end)(x)
+    hands = Slice(pose_end, hands_end)(x)
+    depths = Slice(hands_end, depths_end)(x)
+    sh = Slice(depths_end, n_features)(x)
+
+    pose_n = LayerNormalization()(pose)
+    hands_n = LayerNormalization()(hands)
+    depths_n = LayerNormalization()(depths)
+    sh_n = LayerNormalization()(sh)
+
+    pose_p = LayerNormalization()(Dense(32, activation='relu')(pose_n))
+    hands_p = LayerNormalization()(Dense(64, activation='relu')(hands_n))
+    sh_p = LayerNormalization()(Dense(64, activation='relu')(sh_n))
+    static = Concatenate()([pose_p, hands_p, depths_n, sh_p])  # 162
+
+    # ── Motion stream (velocity on raw slices: zeros are genuine pre-norm)
+    pose_v = LayerNormalization()(FrameVelocity()(pose))       # 18
+    hands_v = LayerNormalization()(FrameVelocity()(hands))     # 84
+    motion = LayerNormalization()(
+        Dense(48, activation='relu')(Concatenate()([pose_v, hands_v])))
+
+    x = Concatenate()([static, motion])  # 210
 
     # ── Recurrent backbone ─────────────────────────────────────────────
     x = Bidirectional(GRU(48, return_sequences=True, activation='tanh'))(x)

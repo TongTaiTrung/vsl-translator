@@ -33,13 +33,36 @@ from .landmarks import (
 class WeightedMean(Layer):
     """Attention weighted mean over the time axis (vendored from backend)."""
 
-    def call(self, inputs):
+    def call(self, inputs, mask=None):
         x, scores = inputs
+        if mask is not None:
+            m = mask[0] if isinstance(mask, (list, tuple)) else mask
+            if m is not None:
+                m = ops.cast(m, scores.dtype)[..., None]
+                scores = scores + (1.0 - m) * -1e9
         weights = ops.softmax(scores, axis=1)
         return ops.sum(x * weights, axis=1)
 
     def compute_mask(self, inputs, mask=None):
         return None
+
+
+@register_keras_serializable(package="vsl")
+class FrameVelocity(Layer):
+    """Per-frame motion delta (vendored from backend)."""
+
+    def call(self, inputs, mask=None):
+        pad = ops.zeros_like(inputs[:, :1, :])
+        diff = ops.concatenate(
+            [pad, inputs[:, 1:, :] - inputs[:, :-1, :]], axis=1)
+        present = ops.any(inputs != 0.0, axis=-1, keepdims=True)
+        present_prev = ops.concatenate(
+            [ops.zeros_like(present[:, :1, :]), present[:, :-1, :]], axis=1)
+        valid = ops.logical_and(present, present_prev)
+        return ops.where(valid, diff, ops.zeros_like(diff))
+
+    def compute_mask(self, inputs, mask=None):
+        return mask
 
 
 @register_keras_serializable(package="vsl")
@@ -95,7 +118,8 @@ def _resolve_labels(model_path, n_outputs, labels=None):
     return resolved
 
 
-_CUSTOM_OBJECTS = {"vsl>WeightedMean": WeightedMean, "vsl>Slice": Slice}
+_CUSTOM_OBJECTS = {"vsl>WeightedMean": WeightedMean, "vsl>Slice": Slice,
+                   "vsl>FrameVelocity": FrameVelocity}
 
 
 def _standardize(X, mean, std):
