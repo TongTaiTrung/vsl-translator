@@ -1,0 +1,8 @@
+# vsl2 dependencies (Core ML only: train/collect/predict).
+# Pins match the project root requirements.txt.
+tensorflow==2.18.1
+opencv-python
+mediapipe==0.10.21
+scikit-learn
+numpy
+scipy

@@ -89,7 +89,7 @@ ARM_DEPTH_RATIO_MIN = 0.3  # clip bounds for the final ratio
 ARM_DEPTH_RATIO_MAX = 2.0
 
 # ── Inactive-side injection augmentation (train only) ─────────────────────────
-INACTIVE_INJECT_PROB = 0.35      # probability of injecting a neutral second arm
+INACTIVE_INJECT_PROB = 0.15      # probability of injecting a neutral second arm
 INACTIVE_WRIST_Y_RANGE = (1.1, 1.6)  # canonical y range for synthetic rest wrist
 INACTIVE_DRIFT_STD = 0.015       # per-frame Gaussian drift of synthetic arm
 
@@ -97,7 +97,7 @@ INACTIVE_DRIFT_STD = 0.015       # per-frame Gaussian drift of synthetic arm
 VAL_SPLIT = 0.15
 TEST_SPLIT = 0.15          # held-out test set, never touched during training
 RANDOM_SEED = 42
-EPOCHS = 500
+EPOCHS = 200
 MODEL_FILENAME = "model.keras"
 TRAIN_RECORD_FILENAME = "train_record.json"  # hyperparameters + epoch history, beside the model
 BATCH_SIZE = 16
@@ -196,8 +196,8 @@ LR_WARMUP_EPOCHS = 10          # linear warmup from LR_MIN → LR_INITIAL
 # ── Loss hyperparameters (CategoricalFocalCrossentropy) ──────────────────────
 FOCAL_ALPHA = 1.0              # class đã cân bằng (30 mẫu/class) + đã có class_weight
                                # → alpha scalar 0.25 chỉ thu nhỏ loss, không cân bằng class
-FOCAL_GAMMA = 2.0
-LABEL_SMOOTHING = 0.05         # 0.1 đè confidence dưới ngưỡng inference 0.70
+FOCAL_GAMMA = 1.0
+LABEL_SMOOTHING = 0.02         # 0.1 đè confidence dưới ngưỡng inference 0.70
 
 # ── Early stopping & overfitting control ─────────────────────────────────────
 ES_PATIENCE = 60               # epochs without val_loss improvement → stop
