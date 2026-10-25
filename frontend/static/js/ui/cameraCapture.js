@@ -1,6 +1,6 @@
 import { postFrame } from "../api/framesApi.js";
 
-const MAX_W = 640;
+const MAX_W = 1280;
 const INTERVAL_MS = 100;
 
 const $ = (id) => document.getElementById(id);
@@ -119,8 +119,8 @@ export function openCamera() {
     audio: false,
     video: {
       facingMode: "user",
-      width: { ideal: 640 },
-      height: { ideal: 480 },
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
     },
   });
   return pending.then(async (stream) => {

@@ -198,6 +198,7 @@ def _training_hyperparams():
         "time_warp_sigma": cfg.TIME_WARP_SIGMA,
         "shift_range": list(cfg.SHIFT_RANGE),
         "frame_drop_prob": cfg.FRAME_DROP_PROB,
+        "augment_preset": getattr(cfg, "AUGMENT_PRESET", "base"),
         "hand_dropout_prob": cfg.HAND_DROPOUT_PROB,
         "hand_swap_prob": cfg.HAND_SWAP_PROB,
         "inactive_inject_prob": cfg.INACTIVE_INJECT_PROB,

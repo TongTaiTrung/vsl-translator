@@ -28,6 +28,10 @@ class StreamSession:
         self.no_hand_frames = 0
         self.sentence = []
         self.last_committed = None
+        # Hysteresis: challenger must win consecutive vote rounds before
+        # replacing the current prediction (anti-flicker on similar signs).
+        self._challenger = -1
+        self._challenger_runs = 0
 
     def process_frame(self, results, frame_shape, model,
                       feat_mean=None, feat_std=None):
@@ -47,6 +51,8 @@ class StreamSession:
                 self.pred_idx = -1
                 self.probs = np.zeros(len(cfg.ACTIONS))
                 self.last_committed = None
+                self._challenger = -1
+                self._challenger_runs = 0
         else:
             self.no_hand_frames = 0
 
@@ -64,13 +70,31 @@ class StreamSession:
             labels = [l for l, _ in self.votes]
             winner = max(set(labels), key=labels.count)
             sconf = float(np.mean([c for l, c in self.votes if l == winner]))
-            if sconf >= cfg.CONFIDENCE_THRESHOLD:
-                self.pred_idx = winner
-                self.probs = np.array(
-                    [sconf if i == winner else 0.0
-                     for i in range(len(cfg.ACTIONS))])
+            thresh = cfg.threshold_for(winner)
+            if sconf >= thresh:
+                if self.pred_idx < 0 or winner == self.pred_idx:
+                    self.pred_idx = winner
+                    self._challenger = -1
+                    self._challenger_runs = 0
+                else:
+                    # Hysteresis: challenger must win consecutive rounds.
+                    if winner == self._challenger:
+                        self._challenger_runs += 1
+                    else:
+                        self._challenger = winner
+                        self._challenger_runs = 1
+                    if self._challenger_runs >= cfg.SWITCH_STABLE_FRAMES:
+                        self.pred_idx = winner
+                        self._challenger = -1
+                        self._challenger_runs = 0
+                if self.pred_idx == winner:
+                    self.probs = np.array(
+                        [sconf if i == winner else 0.0
+                         for i in range(len(cfg.ACTIONS))])
             else:
                 self.pred_idx = -1
+                self._challenger = -1
+                self._challenger_runs = 0
 
             if self.pred_idx >= 0:
                 word = str(cfg.ACTIONS[winner])

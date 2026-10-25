@@ -5,7 +5,7 @@ config used at training time.
 """
 
 SEQUENCE_LEN = 12
-FRAME_STD_SIZE = 640
+FRAME_STD_SIZE = 720
 
 # Fallback labels only — VSLInference resolves labels per model at runtime:
 # explicit `labels` arg > actions.json beside model > train_record.json beside
@@ -21,6 +21,17 @@ ACTIONS = [
 ]
 
 CONFIDENCE_THRESHOLD = 0.70
+SWITCH_STABLE_FRAMES = 2
+CLASS_THRESHOLDS = {}
+
+
+def threshold_for(idx):
+    """Confidence threshold for class index idx (per-class or global)."""
+    try:
+        name = str(ACTIONS[idx])
+    except (IndexError, TypeError):
+        return CONFIDENCE_THRESHOLD
+    return float(CLASS_THRESHOLDS.get(name, CONFIDENCE_THRESHOLD))
 
 # ── MediaPipe ──
 MODEL_COMPLEXITY = 2

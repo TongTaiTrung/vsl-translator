@@ -68,6 +68,8 @@ class Predictor:
         self.no_hand_frames = 0
         self.sentence = []
         self.last_committed = None
+        self._challenger = -1
+        self._challenger_runs = 0
         self.status = "Bấm Bắt đầu — camera của thiết bị sẽ gửi khung hình"
         self.inferring = False
         self.debug = False  # True: vẽ landmark lên frame (tốn CPU)
@@ -109,6 +111,8 @@ class Predictor:
             self.pred_idx = -1
             self.probs = np.zeros(len(cfg.ACTIONS))
             self.no_hand_frames = 0
+            self._challenger = -1
+            self._challenger_runs = 0
             self.status = "Đang nhận diện..."
 
     def stop_inference(self):
@@ -118,6 +122,8 @@ class Predictor:
             self.votes.clear()
             self.pred_idx = -1
             self.probs = np.zeros(len(cfg.ACTIONS))
+            self._challenger = -1
+            self._challenger_runs = 0
             self.status = "Đã dừng"
 
     # -- sentence controls (used by /api/sentences) -------------------------
@@ -203,6 +209,8 @@ class Predictor:
                     self.pred_idx = -1
                     self.probs = np.zeros(len(cfg.ACTIONS))
                     self.last_committed = None
+                    self._challenger = -1
+                    self._challenger_runs = 0
             else:
                 self.no_hand_frames = 0
 
@@ -229,13 +237,29 @@ class Predictor:
                 winner = max(set(labels), key=labels.count)
                 sconf = float(np.mean(
                     [c for lb, c in self.votes if lb == winner]))
-                if sconf >= cfg.CONFIDENCE_THRESHOLD:
-                    self.pred_idx = winner
-                    self.probs = np.array(
-                        [sconf if i == winner else 0.0
-                         for i in range(len(cfg.ACTIONS))])
+                if sconf >= cfg.threshold_for(winner):
+                    if self.pred_idx < 0 or winner == self.pred_idx:
+                        self.pred_idx = winner
+                        self._challenger = -1
+                        self._challenger_runs = 0
+                    else:
+                        if winner == self._challenger:
+                            self._challenger_runs += 1
+                        else:
+                            self._challenger = winner
+                            self._challenger_runs = 1
+                        if self._challenger_runs >= cfg.SWITCH_STABLE_FRAMES:
+                            self.pred_idx = winner
+                            self._challenger = -1
+                            self._challenger_runs = 0
+                    if self.pred_idx == winner:
+                        self.probs = np.array(
+                            [sconf if i == winner else 0.0
+                             for i in range(len(cfg.ACTIONS))])
                 else:
                     self.pred_idx = -1
+                    self._challenger = -1
+                    self._challenger_runs = 0
 
                 if self.pred_idx >= 0:
                     word = str(cfg.ACTIONS[winner])

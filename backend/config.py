@@ -54,7 +54,7 @@ N_SEQUENCES = 15          # number of video sequences per action
 SEQUENCE_LEN = 12        # frames per sequence
 
 # ── Frame normalisation (unified cross-device convention) ─────────────────
-FRAME_STD_SIZE = int(os.environ.get("FRAME_STD_SIZE", "640"))  # square letterbox canvas
+FRAME_STD_SIZE = int(os.environ.get("FRAME_STD_SIZE", "720"))  # square letterbox canvas (720 matches 720p height; keep square — rectangular canvas changes w/h and breaks canonical features)
 INGEST_PORT = int(os.environ.get("INGEST_PORT", "8765"))       # WebSocket /ws/stream
 SESSION_TTL = float(os.environ.get("SESSION_TTL", "60.0"))     # idle seconds before a stream session is dropped
 
@@ -103,8 +103,23 @@ TRAIN_RECORD_FILENAME = "train_record.json"  # hyperparameters + epoch history, 
 BATCH_SIZE = 16
 
 # ── Inference ────────────────────────────────────────────────────────────────
-CONFIDENCE_THRESHOLD = 0.70  # below this → "uncertain", no label emitted
-SMOOTHING_WINDOW = 5         # majority-vote window for live prediction
+CONFIDENCE_THRESHOLD = 0.60  # below this → "uncertain", no label emitted
+SMOOTHING_WINDOW = 3         # majority-vote window for live prediction
+SWITCH_STABLE_FRAMES = 2     # challenger must win N vote rounds in a row
+                             # before replacing the current prediction
+                             # (hysteresis against A↔B flicker on similar signs)
+CLASS_THRESHOLDS = {}        # optional per-class override, e.g.
+                             # {"diachi": 0.75}; falls back to
+                             # CONFIDENCE_THRESHOLD when absent
+
+
+def threshold_for(idx):
+    """Confidence threshold for class index idx (per-class or global)."""
+    try:
+        name = str(ACTIONS[idx])
+    except (IndexError, TypeError):
+        return CONFIDENCE_THRESHOLD
+    return float(CLASS_THRESHOLDS.get(name, CONFIDENCE_THRESHOLD))
 
 # ── Smart sentence (Groq LLM cleanup, see scripts/groq_client.py) ────────────
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b")
@@ -154,6 +169,24 @@ SCALE_JITTER_STD = 0.05        # per-frame ~N(1, std) multiplier (bone-direction
 TIME_WARP_SIGMA = 0.2          # temporal warping strength
 SHIFT_RANGE = (-0.02, 0.02)    # canonical-origin jitter (canonical units)
 FRAME_DROP_PROB = 0.05         # probability of dropping (zeroing) a frame
+
+# ── Strong augmentation preset (train only, opt-in) ─────────────────────────
+# Same ops as base but wider magnitudes + burst tracking-loss and speed-cut,
+# simulating cross-session live variation (different signer speed, camera
+# tracking gaps, early/late sign boundaries). Off by default: set
+# AUGMENT_PRESET="strong" to use. Verified via scripts/kfold_eval.py, not
+# the saturated single held-out split.
+AUGMENT_PRESET = os.environ.get("AUGMENT_PRESET", "base")  # "base" | "strong"
+STRONG_NOISE_STD = 0.09
+STRONG_SCALE_JITTER_STD = 0.08
+STRONG_TIME_WARP_SIGMA = 0.35
+STRONG_SHIFT_RANGE = (-0.04, 0.04)
+STRONG_FRAME_DROP_PROB = 0.15
+STRONG_BURST_PROB = 0.6        # zero one hand for 3-6 consecutive frames
+STRONG_BURST_MIN = 3
+STRONG_BURST_MAX = 6
+STRONG_SPEED_CUT_PROB = 0.5    # truncate head/tail 1-3 frames, zero-pad
+STRONG_SPEED_CUT_MAX = 3
 
 # ── Learning-rate schedule (Warmup + Cosine Annealing) ───────────────────────
 LR_INITIAL = 1e-3

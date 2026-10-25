@@ -1,4 +1,53 @@
 # Changelog
+## Chưa phát hành — Khung hình chuẩn 720 + upload 720p (2026-10-25)
+
+### Đã làm gì và tại sao
+- `backend/config.py`: `FRAME_STD_SIZE` 640 → 720 (square letterbox giữ nguyên, chỉ to hơn). Lý do KHÔNG làm 1280×720 chữ nhật: `aspect_correct()` và `_compute_arm_depth_ratio()` đều nhân `x` với `w/h`; đổi canvas sang chữ nhật (w/h = 1.78 thay vì 1.0) sẽ scale toàn bộ bone vector theo x, lệch phân bố feature canonical mà model + `feature_stats.npz` đã học → bắt buộc retrain và data cũ mất tương thích. Canvas vuông 720 giữ `w/h = 1.0` nên feature không đổi, model cũ chạy nguyên.
+- `VSLInference/_config.py`: `FRAME_STD_SIZE` 640 → 720 (giữ đồng bộ training/inference).
+- `frontend/static/js/ui/cameraCapture.js`: `MAX_W` 640 → 1280, `getUserMedia` ideal 640×480 → 1280×720. Upload gửi frame 720p lên server; server vẫn letterbox về vuông 720 rồi detect — MediaPipe nhận input nét hơn (scale 720p→720 là 0.5625 thay vì 640p→640), landmark ổn định hơn, khung debug hiển thị to rõ hơn.
+- Verify: `normalize_frame` cho mọi nguồn (480p, 720p, 1080p, vuông) đều ra canvas (720, 720, 3); data `.npy` cũ tương thích (pixel đã qua canonical hóa, không phụ thuộc kích thước canvas); test suite giữ nguyên 2 lỗi arm-depth tồn tại từ trước (đã kiểm tra bằng `git stash`).
+
+## Chưa phát hành — Ổn định live (hysteresis + ngưỡng theo class) + preset augment strong (2026-10-25)
+
+### Bối cảnh và mục đích
+- Offline bão hòa: train/val/test đều 100% trên 41 mẫu held-out (8 class, ~30 seq/class, tinhthanh 60). Số liệu offline không còn tín hiệu để tune.
+- Vấn đề thực tế: chạy live, các từ động tác gần giống nhau bị chập chờn, confidence nhảy, nhãn đổi liên tục. Chưa ghi lại được cặp nhầm cụ thể.
+- Ràng buộc đợt này: KHÔNG cloud, KHÔNG thu thêm dữ liệu. Chỉ đụng code model/feature/training/inference.
+- Mục tiêu: (1) tái hiện nhầm lẫn offline để đo được, (2) tăng margin phân biệt, (3) ổn định live bằng voting/threshold, (4) mọi thay đổi model báo cáo 3 số: held-out test acc, stress-test acc, per-class min-confidence.
+
+### Chẩn đoán đã làm (quan trọng, đổi hướng cả plan)
+- Viết `scripts/stress_test.py`: đánh model hiện tại dưới nhiễu live-like (noise 0.09, time-warp 0.35, frame-drop 0.15, burst mất 1 tay 3–6 frame liên tiếp, speed-cut, partial sliding windows với overlap ≥ 50%).
+- Kết quả: model CŨ vẫn 100% trên mọi nhiễu tổng hợp (410 bản stress + 378 partial windows). Nhiễu nhẹ không phải nguyên nhân live kém.
+- Viết `scripts/profile_robustness.py`: sweep từng loại nhiễu riêng lẻ (noise 0.05→0.25, warp 0.2→0.7, drop 0.05→0.4, shift, scale-jitter, burst 2→8 frames, speed-cut 1→4, hand_dropout/swap/inject ở p=1.0). Kết quả: TẤT CẢ vẫn 100%.
+- Baseline nearest-centroid không train đạt 96% (camon 0.867, khoer 0.800) → bài toán 8 từ hiện tại về bản chất đã dễ, các class cách xa nhau.
+- Đo khoảng cách: centroid diachi–tambiet = 9, NHỎ HƠN phân tán nội class (~9–12). Hai từ này chồng lấn nhau trong không gian đặc trưng.
+- Confidence val/test trung bình chỉ ~0.80, sát ngưỡng cứng 0.70 → live dễ rớt dưới ngưỡng và nhảy nhãn.
+- Kết luận: data 30 mẫu thu trong một phiên/người quá đồng nhất; live khác phiên (tốc độ, biên độ, vị trí đứng, tracking gap) nằm ngoài phân bố train. Hướng fix: augment khắc nghiệt hơn để ép bất biến rộng + hysteresis ở inference.
+
+### Đã khắc phục 1: hysteresis + ngưỡng theo class (chống chập chờn live)
+- `backend/config.py`: thêm `SWITCH_STABLE_FRAMES = 2` (challenger phải thắng N vòng vote liên tiếp mới thay dự đoán), `CLASS_THRESHOLDS = {}` (dict rỗng, override từng class khi cần), hàm `threshold_for(idx)` (per-class hoặc fallback 0.70 toàn cục). Chọn `AUGMENT_PRESET` qua env `AUGMENT_PRESET` (mặc định "base", giữ nguyên hành vi cũ).
+- `backend/scripts/stream_session.py` (đường live dùng chung cho realtime CLI): thêm state `_challenger/_challenger_runs`; logic vote: winner == pred hiện tại → giữ; winner mới → đếm runs liên tiếp, đủ `SWITCH_STABLE_FRAMES` mới đổi; dưới ngưỡng → pred = -1 và reset challenger; reset challenger khi mất tay ≥ 5 frame.
+- `frontend/app/services/predictor.py`: mirror y hệt hysteresis trên (khởi tạo, start/stop inference, nhánh mất tay, nhánh dưới ngưỡng).
+- `VSLInference/_config.py` + `VSLInference/inference.py`: parity `threshold_for`, `CLASS_THRESHOLDS`, `SWITCH_STABLE_FRAMES`; single-shot `predict()` dùng `threshold_for(best_idx)` thay ngưỡng cứng.
+- Tác dụng: flip-flop A/B từng frame không còn đổi nhãn ngay; chỉ đổi khi cử chỉ mới thắng ổn định liên tiếp → hết chập chờn giữa hai từ giống nhau, giá là trễ ~2 vòng vote (~0.2–0.3s).
+- `backend/tests/test_hysteresis.py` (mới, 4 test PASS): giữ dự đoán khi winner ổn định; 1 frame challenger không lật được; challenger thắng đủ `SWITCH_STABLE_FRAMES + SMOOTHING_WINDOW` vòng thì đổi; winner dưới per-class threshold (0.9 < 0.95) thì giữ uncertain (-1).
+
+### Đã khắc phục 2: preset augment "strong" + train lại model final
+- `backend/src/vsl_translator/dataset.py`: thêm `_burst_hand_drop()` (zero 1 tay 3–6 frame liên tiếp, mô phỏng MediaPipe mất track giữa chừng), `_speed_cut()` (cắt đầu/cuối 1–3 frame + zero-pad, mô phỏng bấm ký sớm/muộn ở biên cửa sổ); `augment_sequence(preset)` và `augment_train_data(preset)` nhận preset "base"|"strong" (None → `cfg.AUGMENT_PRESET`); base giữ nguyên hệ số cũ, strong dùng `STRONG_*` + xác suất warp 0.7/drop 0.5 + burst 0.6 + speed-cut 0.5. Đo được strong gây nhiễu mạnh gấp ~3.5 lần base (mean |perturb| 0.0728 vs 0.0209).
+- `backend/config.py`: hằng số `STRONG_NOISE_STD = 0.09`, `STRONG_SCALE_JITTER_STD = 0.08`, `STRONG_TIME_WARP_SIGMA = 0.35`, `STRONG_SHIFT_RANGE = ±0.04`, `STRONG_FRAME_DROP_PROB = 0.15`, `STRONG_BURST_PROB = 0.6`, `STRONG_BURST_MIN/MAX = 3/6`, `STRONG_SPEED_CUT_PROB = 0.5`, `STRONG_SPEED_CUT_MAX = 3`.
+- `backend/scripts/train.py`: ghi `augment_preset` vào `train_record.json` để so sánh thử nghiệm.
+- Công cụ đo mới: `scripts/kfold_eval.py` (K-fold chạy đúng pipeline train.py: split stratified → augment train-only → train stats → BiGRU + early stopping; báo mean/worst-fold acc + margin; cờ `--preset`), `scripts/profile_robustness.py` (sweep từng nhiễu riêng lẻ).
+- K-fold 3 folds: base 100%/100%/100% (mean 1.0000, margin 0.7714); strong 100%/100%/98.89% (mean 0.9963, margin 0.7858, fold 2 sụt khoer 0.9). Strong làm K-fold SỤT nhẹ nhưng margin CAO hơn — đúng tác dụng: ép model học bất biến rộng hơn thay vì khớp khít phân bố đồng nhất.
+- Train final `AUGMENT_PRESET=strong`: held-out test 100% (41/41), val mean conf 0.8078 (min 0.7475), stress + partial windows 100% (378 windows). `models/model.keras` + `feature_stats.npz` + `train_record.json` đã thay (backup cũ xoay vòng tự động trong `models/backups/`; backup `backup_20261022_231039` bị xoay vòng xóa theo `MAX_BACKUPS=5`, chỉ còn stub thư mục).
+
+### Lỗi tồn đọng (chưa sửa, không liên quan đợt này)
+- `tests/test_arm_depths.py` còn 2 lỗi TỒN TẠI TỪ TRƯỚC (đã kiểm tra bằng `git stash`: lỗi vẫn hiện khi revert toàn bộ thay đổi đợt này):
+  - `ERROR: test_session_calibration` — `ArmDepthCalibrator.update() got an unexpected keyword argument 'shoulder_width_px'` (test gọi API cũ, code đã đổi signature).
+  - `FAIL: test_pixel_aspect_invariance` — `0.3 != 1.0` (ratio kẹt ở clip min, kỳ vọng test sai hoặc hằng số đổi mà test chưa theo).
+- Full suite: 38 tests (34 cũ + 4 hysteresis mới), chỉ 2 lỗi arm-depth trên; hysteresis 4/4 pass, far_bias + universal_connector pass.
+- Chưa làm (hẹn đợt sau, cần train dài hoặc thu data): kênh vận tốc/gia tốc tay, loss contrastive/triplet phụ trên embedding, ablation tắt hand_swap/hand_dropout cho dấu một tay, ngưỡng per-class thực tế cho diachi/tambiet (hiện `CLASS_THRESHOLDS` còn rỗng — cần live test ghi lại cặp nhầm để đặt số).
+- Lưu ý live test thủ công vẫn bắt buộc: đếm số lần nhảy nhãn/phút trên các từ giống nhau để xác nhận hysteresis có hết chập chờn ngoài hiện trường.
+
 ## Chưa phát hành — Thay face-offset bằng raised-shoulder anchors (188-dim → 356-dim)
 
 ### Tại sao dim thay đổi

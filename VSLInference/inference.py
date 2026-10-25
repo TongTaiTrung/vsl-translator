@@ -199,7 +199,7 @@ class VSLInference:
         probs = np.asarray(self._model.predict(X, verbose=0)[0], dtype=np.float32)
         best_idx = int(np.argmax(probs))
         conf = float(probs[best_idx])
-        if conf < float(cfg.CONFIDENCE_THRESHOLD):
+        if conf < float(cfg.threshold_for(best_idx)):
             return {"label": "", "confidence": conf,
                     "probs": [float(p) for p in probs]}
         return {"label": str(self._labels[best_idx]), "confidence": conf,
