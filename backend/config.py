@@ -144,8 +144,6 @@ def set_groq_api_key(key):
 
 # ── Shoulder-relative / scale normalization ──────────────────────────────────
 SHOULDER_VIS_THRESHOLD = 0.5  # shoulders below this visibility → frame zeros
-MIN_SHOULDER_WIDTH = 0.05     # legacy: unused by canonical extract() (no width
-                              # divisor anymore); kept for realtime overlay display
 
 # ── Data Augmentation ────────────────────────────────────────────────────────
 AUGMENT_FACTOR = 8             # how many augmented copies per original sample

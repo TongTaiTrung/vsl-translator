@@ -33,18 +33,11 @@ def _load_artifacts():
     global _model, _feat_mean, _feat_std
     if _model is not None:
         return
-    from keras.models import load_model
-    model_path = os.path.join(cfg.MODELS_DIR, cfg.MODEL_FILENAME)
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Model not found at '{model_path}'. Run scripts/train.py first.")
-    _model = load_model(model_path)
-    stats_path = os.path.join(cfg.MODELS_DIR, "feature_stats.npz")
-    if os.path.exists(stats_path):
-        stats = np.load(stats_path)
-        _feat_mean, _feat_std = stats["mean"], stats["std"]
+    from scripts._common import load_classifier
+    _model, _feat_mean, _feat_std = load_classifier()
+    if _feat_mean is not None:
         print("Feature stats loaded.")
     else:
-        _feat_mean, _feat_std = None, None
         print("WARNING: feature_stats.npz not found – no standardisation.")
     # Deferred imports (need TF/MediaPipe lazily at runtime)
     print("Model loaded.")

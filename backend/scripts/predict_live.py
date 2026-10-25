@@ -11,18 +11,22 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+import warnings
+warnings.warn(
+    "predict_live.py is deprecated; use realtime_predict.py (StreamSession) instead.",
+    DeprecationWarning, stacklevel=2)
+
 from collections import deque
 
 import cv2
 import numpy as np
-from keras.models import load_model
 
 import config as cfg
+from scripts._common import extract_frame_vector, load_classifier, standardize
 from vsl_translator.landmarks import (
-    create_model, detect, draw_landmarks_new, extract, feed_calibrator,
+    create_model, detect, draw_landmarks_new,
     ArmDepthCalibrator, ArmDepthSmoother,
 )
-from vsl_translator.dataset import standardize_features
 
 
 def smooth_label(history):
@@ -36,15 +40,11 @@ def smooth_label(history):
 
 
 def main():
-    model_path = os.path.join(cfg.MODELS_DIR, cfg.MODEL_FILENAME)
-    stats_path = os.path.join(cfg.MODELS_DIR, "feature_stats.npz")
-    if not os.path.exists(model_path) or not os.path.exists(stats_path):
+    try:
+        model, mean, std = load_classifier()
+    except FileNotFoundError:
         print("Error: model or feature_stats.npz missing. Train first via scripts/train.py.")
         return
-
-    model = load_model(model_path)
-    stats = np.load(stats_path)
-    mean, std = stats["mean"], stats["std"]
 
     window = deque(maxlen=cfg.SEQUENCE_LEN)
     votes = deque(maxlen=cfg.SMOOTHING_WINDOW)
@@ -60,16 +60,14 @@ def main():
                 break
             img, results = detect(frame, holistic)
             img = draw_landmarks_new(img, results)
-            feed_calibrator(results, frame.shape[:2], calibrator)
-            vec = extract(results, frame_shape=frame.shape[:2],
-                          neutral_lens=[calibrator.get(0), calibrator.get(1)])
-            vec[102:104] = [smoother.update(s, vec[102 + s]) for s in (0, 1)]
+            vec = extract_frame_vector(results, frame.shape[:2],
+                                       calibrator, smoother)
             window.append(vec)
 
             text, color = "Collecting frames...", (200, 200, 200)
             if len(window) == cfg.SEQUENCE_LEN:
                 seq = np.expand_dims(np.array(window, dtype=np.float32), axis=0)
-                seq, _, _ = standardize_features(seq, mean=mean, std=std)
+                seq = standardize(seq, mean, std)
                 probs = model.predict(seq, verbose=0)[0]
                 pred, conf = int(np.argmax(probs)), float(np.max(probs))
                 votes.append((pred, conf))

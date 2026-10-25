@@ -7,16 +7,17 @@ import numpy as np
 import mediapipe as mp
 import math
 
+import config as cfg
+
 mp_holistic = mp.solutions.holistic        # holistic model
 mp_drawing = mp.solutions.drawing_utils    # drawing utilities
 
 
 def create_model():
     """Khởi tạo Holistic với cấu hình tối ưu từ config (complexity 2, smooth, ngưỡng thấp)."""
-    import config as cfg
     return mp_holistic.Holistic(
-        model_complexity=getattr(cfg, 'MODEL_COMPLEXITY', 2),
-        smooth_landmarks=getattr(cfg, 'SMOOTH_LANDMARKS', True),
+        model_complexity=cfg.MODEL_COMPLEXITY,
+        smooth_landmarks=cfg.SMOOTH_LANDMARKS,
         min_detection_confidence=cfg.MIN_DETECTION_CONFIDENCE,
         min_tracking_confidence=cfg.MIN_TRACKING_CONFIDENCE,
     )
@@ -44,9 +45,8 @@ def normalize_frame(frame, size=None):
     source resolution. The output is what detect()/extract() callers should
     pass as frame / frame_shape.
     """
-    import config as _cfg
     if size is None:
-        size = int(getattr(_cfg, 'FRAME_STD_SIZE', 640))
+        size = int(cfg.FRAME_STD_SIZE)
     h, w = frame.shape[:2]
     scale = size / max(w, h)
     nw, nh = int(round(w * scale)), int(round(h * scale))
@@ -71,24 +71,8 @@ def aspect_correct(x, y, frame_shape):
 
 
 def draw_landmarks(image, results):
-    """Draw face, pose, and hand landmarks on the image."""
-    # Draw face connections
-    mp_drawing.draw_landmarks(image, results.face_landmarks, mp_holistic.FACEMESH_CONTOURS,
-                             mp_drawing.DrawingSpec(color=(80,110,10), thickness=1, circle_radius=1),
-                             mp_drawing.DrawingSpec(color=(80,256,121), thickness=1, circle_radius=1))
-    # Draw pose connections
-    mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS,
-                             mp_drawing.DrawingSpec(color=(80,22,10), thickness=2, circle_radius=4),
-                             mp_drawing.DrawingSpec(color=(80,44,121), thickness=2, circle_radius=2))
-    # Draw left hand connections
-    mp_drawing.draw_landmarks(image, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
-                             mp_drawing.DrawingSpec(color=(121,22,76), thickness=2, circle_radius=4),
-                             mp_drawing.DrawingSpec(color=(121,44,250), thickness=2, circle_radius=2))
-    # Draw right hand connections
-    mp_drawing.draw_landmarks(image, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS,
-                             mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=4),
-                             mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2))
-    return image
+    """Legacy name kept for backward compat; identical to draw_landmarks_new."""
+    return draw_landmarks_new(image, results)
 
 
 def draw_landmarks_new(image, results):
@@ -147,7 +131,6 @@ IDLE_WRIST_X_MAX = 0.95
 
 def _get_shoulders(results):
     """Return (ls, rs) if both shoulders exist and are trusted, else (None, None)."""
-    import config as cfg
     if results.pose_landmarks is None:
         return None, None
     try:
@@ -157,7 +140,7 @@ def _get_shoulders(results):
         return None, None
     if ls is None or rs is None:
         return None, None
-    vis_thresh = getattr(cfg, 'SHOULDER_VIS_THRESHOLD', 0.5)
+    vis_thresh = cfg.SHOULDER_VIS_THRESHOLD
     if (getattr(ls, 'visibility', 1.0) < vis_thresh
             or getattr(rs, 'visibility', 1.0) < vis_thresh):
         return None, None
@@ -182,30 +165,6 @@ def shoulder_width(results):
     if ls is None or rs is None:
         return None
     return float(abs(ls.x - rs.x))
-
-
-def draw_face_spokes(image, results, color=(255, 0, 255), thickness=1):
-    """Draw lines from each hand landmark to the face center.
-
-    Debug overlay visualizing the face-offset features: each spoke is the
-    raw-space vector that _face_offsets() normalizes by palm_size. Drawn per
-    hand so left/right spokes can be told apart by which hand they start from.
-    Missing face center → nothing drawn.
-    """
-    import config as _cfg
-    vis_thresh = getattr(_cfg, 'SHOULDER_VIS_THRESHOLD', 0.5)
-    fc = _get_face_center(results, vis_thresh)
-    if fc is None:
-        return image
-    h, w = image.shape[:2]
-    p_fc = (int(fc[0] * w), int(fc[1] * h))
-    for hand_lm in (results.left_hand_landmarks, results.right_hand_landmarks):
-        if hand_lm is None:
-            continue
-        for res in hand_lm.landmark:
-            cv2.line(image, (int(res.x * w), int(res.y * h)), p_fc, color, thickness)
-    cv2.circle(image, p_fc, 5, color, -1)
-    return image
 
 
 def draw_shoulder_spokes(image, results, color=(0, 255, 255), thickness=1):
@@ -242,8 +201,7 @@ def draw_landmarks_test(image, results, color=(0, 255, 0), thickness=1):
       hai vai. Không nối tới giữa mặt nữa.
     - Vai/face thiếu → không vẽ gì.
     """
-    import config as _cfg
-    vis_thresh = getattr(_cfg, 'SHOULDER_VIS_THRESHOLD', 0.5)
+    vis_thresh = cfg.SHOULDER_VIS_THRESHOLD
     ls, rs = _get_shoulders(results)
     if ls is None or rs is None:
         return image
@@ -290,8 +248,7 @@ def draw_arm_lengths(image, results, color=(0, 255, 0), thickness=2,
     Returns:
         The annotated image.
     """
-    import config as _cfg
-    vis_thresh = getattr(_cfg, 'SHOULDER_VIS_THRESHOLD', 0.5)
+    vis_thresh = cfg.SHOULDER_VIS_THRESHOLD
 
     if results.pose_landmarks is None:
         return image
@@ -375,6 +332,16 @@ def _retarget_arm(shoulder_canon, upper_raw, fore_raw):
     return elbow, wrist
 
 
+def _hand_pts(hand_lm):
+    """(21, 2) landmark array, or None if missing/malformed."""
+    if hand_lm is None:
+        return None
+    pts = np.array([(res.x, res.y) for res in hand_lm.landmark], dtype=np.float64)
+    if pts.shape != (21, 2):
+        return None
+    return pts
+
+
 def _process_hand(hand_lm):
     """Normalize one hand around its own wrist landmark; missing/degenerate → zeros(42).
 
@@ -387,8 +354,8 @@ def _process_hand(hand_lm):
     """
     if hand_lm is None:
         return np.zeros(HAND_DIM)
-    pts = np.array([(res.x, res.y) for res in hand_lm.landmark], dtype=np.float64)
-    if pts.shape != (21, 2):
+    pts = _hand_pts(hand_lm)
+    if pts is None:
         return np.zeros(HAND_DIM)
     w0, mcp5, mcp9, mcp17 = pts[0], pts[5], pts[9], pts[17]
     palm_size = max(float(np.linalg.norm(w0 - mcp9)),
@@ -402,13 +369,11 @@ def _process_hand(hand_lm):
 def _palm_size(hand_lm):
     """Palm scale in raw image units, or None if the hand is missing/degenerate.
 
-    Shared by _process_hand and _face_offsets so both normalize with the
+    Shared by _process_hand and _shoulder_offsets so both normalize with the
     same per-hand scale.
     """
-    if hand_lm is None:
-        return None
-    pts = np.array([(res.x, res.y) for res in hand_lm.landmark], dtype=np.float64)
-    if pts.shape != (21, 2):
+    pts = _hand_pts(hand_lm)
+    if pts is None:
         return None
     palm_size = max(float(np.linalg.norm(pts[0] - pts[9])),
                     float(np.linalg.norm(pts[5] - pts[17])) * 1.25)
@@ -461,23 +426,6 @@ def _get_raised_shoulders(results, vis_thresh):
     return ls_r, rs_r, mid
 
 
-def _face_offsets(hand_lm, face_center, palm_size):
-    """Per-point hand→face-center offsets in canonical palm units.
-
-    offset_i = (pts_i - face_center) / palm_size * STD_PALM, flattened to 42.
-    Missing hand, missing face center, or degenerate palm → zeros(42).
-
-    Legacy: kept for data migration / tests; extract() no longer uses it.
-    """
-    if hand_lm is None or face_center is None or palm_size is None:
-        return np.zeros(FACE_REF_DIM)
-    pts = np.array([(res.x, res.y) for res in hand_lm.landmark], dtype=np.float64)
-    if pts.shape != (21, 2) or not np.all(np.isfinite(pts)):
-        return np.zeros(FACE_REF_DIM)
-    fc = np.array(face_center, dtype=np.float64)
-    return ((pts - fc) / palm_size * STD_PALM).flatten()
-
-
 def _shoulder_offsets(hand_lm, anchors, palm_size):
     """Per-point hand→anchor offsets for 3 raised-shoulder anchors.
 
@@ -525,9 +473,8 @@ def _compute_arm_depth_ratio(shoulder, elbow, wrist, frame_shape=None,
     calibration. dz (wrist.z - shoulder.z, MediaPipe relative depth) applies
     a clipped auxiliary correction via z_gain.
     """
-    import config as _cfg
     if z_gain is None:
-        z_gain = float(getattr(_cfg, 'ARM_DEPTH_Z_GAIN', 2.0))
+        z_gain = float(cfg.ARM_DEPTH_Z_GAIN)
     upper_raw_len = _ac_dist(shoulder, elbow, frame_shape)
     fore_raw_len = _ac_dist(elbow, wrist, frame_shape)
 
@@ -610,9 +557,8 @@ class ArmDepthSmoother:
 
 def feed_calibrator(results, frame_shape, calibrator, vis_thresh=None):
     """Feed one frame's arm lengths (aspect-corrected units) into calibrator."""
-    import config as _cfg
     if vis_thresh is None:
-        vis_thresh = getattr(_cfg, 'SHOULDER_VIS_THRESHOLD', 0.5)
+        vis_thresh = cfg.SHOULDER_VIS_THRESHOLD
     if results.pose_landmarks is None:
         return (False, False)
     lm = results.pose_landmarks.landmark
@@ -661,10 +607,9 @@ def extract(results, frame_shape=None, neutral_lens=None):
     degenerate palm, or missing raised-shoulder anchors → that side's 126
     shoulder-offset slots are zeros, frame otherwise intact.
     """
-    import config as _cfg
-    vis_thresh = getattr(_cfg, 'SHOULDER_VIS_THRESHOLD', 0.5)
-    idle_y_max = getattr(_cfg, 'IDLE_WRIST_Y_MAX', IDLE_WRIST_Y_MAX)
-    idle_x_max = getattr(_cfg, 'IDLE_WRIST_X_MAX', IDLE_WRIST_X_MAX)
+    vis_thresh = cfg.SHOULDER_VIS_THRESHOLD
+    idle_y_max = cfg.IDLE_WRIST_Y_MAX
+    idle_x_max = cfg.IDLE_WRIST_X_MAX
     if results.pose_landmarks is None:
         return np.zeros(BODY_ONLY_DIM)
     lm = results.pose_landmarks.landmark
@@ -725,27 +670,74 @@ def extract(results, frame_shape=None, neutral_lens=None):
 
 
 
-# ── Feature selection ────────────────────────────────────────────────────────
+# ── Feature layout ─────────────────────────────────────────────────────────
 # Layout of the 356-dim vector: pose [0:18] | lh [18:60] | rh [60:102] | arm_depths [102:104]
 #   | sh_off_lh [104:230] | sh_off_rh [230:356]
 # Pose keeps 6 canonical joints only: L/R shoulder, L/R elbow, L/R wrist.
 POSE_DIM = 6 * 3
-FACE_DIM = 0  # face landmarks are no longer extracted
 HAND_DIM = 21 * 2
 ARM_DEPTH_DIM = 2   # left/right arm foreshortening depth ratio
-FACE_REF_DIM = 21 * 2  # legacy per-hand hand→face-center offsets (migration/tests)
-FACE_OFF_DIM = FACE_REF_DIM * 2  # legacy both-hands face offsets
 SH_OFF_REF_DIM = 21 * 2 * 3  # per-hand offsets to 3 raised-shoulder anchors (x, y per point)
 SH_OFF_DIM = SH_OFF_REF_DIM * 2  # both hands
-FULL_DIM = 1662  # legacy absolute-coordinate format (pre-conversion data)
 BODY_ONLY_DIM = POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM + SH_OFF_DIM  # 356
-
-
-def select_features(vec):
-    """Deprecated no-op: extract() already returns the 356-dim feature vector."""
-    return vec
 
 
 def n_features():
     """Feature dim the model should expect given current config."""
     return BODY_ONLY_DIM
+
+
+def slice_bounds():
+    """Canonical 356-dim slice boundaries as (pose_end, hands_end, depths_end, sh_mid, end).
+
+    Single source of truth for the layout documented in extract():
+    pose [0:18] | lh [18:60] | rh [60:102] | arm_depths [102:104]
+    | sh_off_lh [104:230] | sh_off_rh [230:356].
+    """
+    pose_end = POSE_DIM                      # 18
+    hands_end = pose_end + HAND_DIM * 2      # 102
+    depths_end = hands_end + ARM_DEPTH_DIM   # 104
+    sh_mid = depths_end + SH_OFF_REF_DIM     # 230
+    end = depths_end + SH_OFF_DIM             # 356
+    return pose_end, hands_end, depths_end, sh_mid, end
+
+
+def coord_mask(n_features):
+    """True for (dx,dy) coordinate channels, False for visibility and ratio channels."""
+    mask = np.ones(n_features, dtype=bool)
+    if n_features >= POSE_DIM:
+        vis_idx = np.arange(2, POSE_DIM, 3)
+        mask[vis_idx] = False
+    # arm_depths are ratios, not (dx,dy) coordinates — exclude from coord augmentations
+    # (shoulder-offset blocks are coordinates → stay augmentable)
+    if n_features > POSE_DIM + HAND_DIM * 2:
+        mask[POSE_DIM + HAND_DIM * 2:POSE_DIM + HAND_DIM * 2 + ARM_DEPTH_DIM] = False
+    return mask
+
+
+def shift_masks(n_features):
+    """(is_dx, is_dy) bool masks for _random_shift-style 2D jitter.
+
+    pose uses (x at i, y at i+1) per 3-channel joint; hand and
+    shoulder-offset blocks use pairwise (x, y) layout.
+    """
+    pose_end, hands_end, depths_end, _, sh_end_full = slice_bounds()
+    is_dx = np.zeros(n_features, dtype=bool)
+    is_dy = np.zeros(n_features, dtype=bool)
+    for i in range(0, min(POSE_DIM, n_features), 3):
+        is_dx[i] = True
+        if i + 1 < n_features:
+            is_dy[i + 1] = True
+    hand_end = min(hands_end, n_features)
+    for i in range(POSE_DIM, hand_end, 2):
+        is_dx[i] = True
+        if i + 1 < hand_end:
+            is_dy[i + 1] = True
+    # Shoulder-offset blocks share the (x, y) pairwise layout of the hand blocks.
+    sh_end = min(sh_end_full, n_features)
+    if n_features >= depths_end:
+        for i in range(depths_end, sh_end, 2):
+            is_dx[i] = True
+            if i + 1 < sh_end:
+                is_dy[i + 1] = True
+    return is_dx, is_dy

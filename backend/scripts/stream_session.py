@@ -10,10 +10,8 @@ from collections import deque
 import numpy as np
 
 import config as cfg
-from vsl_translator.dataset import standardize_features
-from vsl_translator.landmarks import (
-    ArmDepthCalibrator, ArmDepthSmoother, extract, feed_calibrator,
-)
+from scripts._common import extract_frame_vector, standardize
+from vsl_translator.landmarks import ArmDepthCalibrator, ArmDepthSmoother
 
 
 class StreamSession:
@@ -52,18 +50,13 @@ class StreamSession:
         else:
             self.no_hand_frames = 0
 
-        feed_calibrator(results, frame_shape, self.calibrator)
-        keypoints = extract(
-            results, frame_shape=frame_shape,
-            neutral_lens=[self.calibrator.get(0), self.calibrator.get(1)])
-        keypoints[102:104] = [self.smoother.update(s, keypoints[102 + s])
-                              for s in (0, 1)]
+        keypoints = extract_frame_vector(results, frame_shape,
+                                           self.calibrator, self.smoother)
         self.seq.append(keypoints)
 
         if len(self.seq) == cfg.SEQUENCE_LEN and has_hand:
             X = np.array([list(self.seq)], dtype="float32")
-            if feat_mean is not None and feat_std is not None:
-                X, _, _ = standardize_features(X, mean=feat_mean, std=feat_std)
+            X = standardize(X, feat_mean, feat_std)
             yhat = model.predict(X, verbose=0)
             self.probs = yhat[0]
             best_idx = int(np.argmax(self.probs))
