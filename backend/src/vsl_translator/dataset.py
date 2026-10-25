@@ -327,23 +327,86 @@ def inject_inactive_side(sequence, p=None):
     return out
 
 
-def augment_sequence(sequence):
-    """Apply a random combination of augmentations to a single sequence."""
+def _burst_hand_drop(sequence, min_len=None, max_len=None):
+    """Zero one whole hand for a consecutive run (tracking-loss burst).
+
+    Simulates MediaPipe losing a hand mid-sign on live camera. Operates
+    on the canonical layout pose [0:18] | lh [18:60] | rh [60:102] |
+    arm_depths [102:104] | sh_off [104:356].
+    """
+    if min_len is None:
+        min_len = cfg.STRONG_BURST_MIN
+    if max_len is None:
+        max_len = cfg.STRONG_BURST_MAX
+    out = sequence.copy()
+    _, _, _, sh_start, _ = slice_bounds()
+    length = int(np.random.randint(min_len, max_len + 1))
+    start = int(np.random.randint(0, sequence.shape[0] - length + 1))
+    end = start + length
+    if np.random.rand() < 0.5:
+        out[start:end, POSE_DIM:POSE_DIM + HAND_DIM] = 0.0
+        out[start:end, sh_start:sh_start + SH_OFF_REF_DIM] = 0.0
+    else:
+        out[start:end, POSE_DIM + HAND_DIM:POSE_DIM + 2 * HAND_DIM] = 0.0
+        out[start:end, sh_start + SH_OFF_REF_DIM:sh_start + 2 * SH_OFF_REF_DIM] = 0.0
+    return out
+
+
+def _speed_cut(sequence, max_cut=None):
+    """Truncate head or tail by 1..max_cut frames, zero-pad the other end.
+
+    Simulates starting/stopping the sign early or late on live camera
+    (partial sign at window boundaries).
+    """
+    if max_cut is None:
+        max_cut = cfg.STRONG_SPEED_CUT_MAX
+    cut = int(np.random.randint(1, max_cut + 1))
+    if np.random.rand() < 0.5:
+        return np.concatenate(
+            [np.zeros_like(sequence[:cut]), sequence[:-cut]], axis=0)
+    return np.concatenate(
+        [sequence[cut:], np.zeros_like(sequence[:cut])], axis=0)
+
+
+def augment_sequence(sequence, preset=None):
+    """Apply a random combination of augmentations to a single sequence.
+
+    preset: "base" (default, magnitudes from cfg) or "strong" (wider
+    magnitudes + burst tracking-loss + speed-cut for cross-session
+    robustness). Falls back to cfg.AUGMENT_PRESET when None.
+    """
+    if preset is None:
+        preset = getattr(cfg, "AUGMENT_PRESET", "base")
+    strong = (preset == "strong")
     seq = sequence.copy()
     # 1. Add noise to non-zero coords (visibility untouched)
-    seq = _add_noise(seq)
+    seq = _add_noise(
+        seq, std=cfg.STRONG_NOISE_STD if strong else None)
     # 2. 50% chance scale jitter (shoulder-width measurement noise)
     if np.random.rand() < 0.5:
-        seq = _scale_jitter(seq)
-    # 3. 50% chance time warp with zero-mask preservation
-    if np.random.rand() < 0.5:
-        seq = _time_warp(seq)
+        seq = _scale_jitter(
+            seq, std=cfg.STRONG_SCALE_JITTER_STD if strong else None)
+    # 3. 50% (base) / 70% (strong) chance time warp with zero-mask preservation
+    if np.random.rand() < (0.7 if strong else 0.5):
+        seq = _time_warp(
+            seq, sigma=cfg.STRONG_TIME_WARP_SIGMA if strong else None)
     # 4. 50% chance shoulder-midpoint jitter (2D shift, visibility untouched)
     if np.random.rand() < 0.5:
-        seq = _random_shift(seq)
-    # 5. 30% chance frame drop at the very end
-    if np.random.rand() < 0.3:
-        seq = _random_frame_drop(seq)
+        if strong:
+            lo, hi = cfg.STRONG_SHIFT_RANGE
+            seq = _random_shift(seq, lo=lo, hi=hi)
+        else:
+            seq = _random_shift(seq)
+    # 5. 30% (base) / 50% (strong) chance frame drop at the very end
+    if np.random.rand() < (0.5 if strong else 0.3):
+        seq = _random_frame_drop(
+            seq, p=cfg.STRONG_FRAME_DROP_PROB if strong else None)
+    # 5b. Strong only: burst tracking-loss + speed-cut
+    if strong:
+        if np.random.rand() < cfg.STRONG_BURST_PROB:
+            seq = _burst_hand_drop(seq)
+        if np.random.rand() < cfg.STRONG_SPEED_CUT_PROB:
+            seq = _speed_cut(seq)
     # 6. Hand dropout: force learning motion, not hand presence
     seq = _random_hand_dropout(seq)
     # 7. Hand swap: force side-invariance (label unchanged)
@@ -481,7 +544,8 @@ def load_raw_dataset(data_dir=cfg.DATA_DIR, actions=cfg.ACTIONS, label_map=cfg.L
     return X, y
 
 
-def augment_train_data(X_train, y_train, augment_factor=cfg.AUGMENT_FACTOR):
+def augment_train_data(X_train, y_train, augment_factor=cfg.AUGMENT_FACTOR,
+                       preset=None):
     """Augment ONLY training sequences to prevent data leakage.
 
     For each sample in X_train, keeps the original sample and adds
@@ -491,6 +555,7 @@ def augment_train_data(X_train, y_train, augment_factor=cfg.AUGMENT_FACTOR):
         X_train: (N, seq_len, n_features)
         y_train: (N, num_classes)
         augment_factor: number of augmented copies per sample
+        preset: "base" | "strong" (None → cfg.AUGMENT_PRESET)
 
     Returns:
         X_aug: (N * (1 + augment_factor), seq_len, n_features)
@@ -504,7 +569,7 @@ def augment_train_data(X_train, y_train, augment_factor=cfg.AUGMENT_FACTOR):
         aug_X.append(seq)
         aug_y.append(label)
         for _ in range(augment_factor):
-            aug_X.append(augment_sequence(seq))
+            aug_X.append(augment_sequence(seq, preset=preset))
             aug_y.append(label)
 
     X_aug = np.array(aug_X, dtype=np.float32)

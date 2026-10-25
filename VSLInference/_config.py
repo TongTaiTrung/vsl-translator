@@ -21,6 +21,17 @@ ACTIONS = [
 ]
 
 CONFIDENCE_THRESHOLD = 0.70
+SWITCH_STABLE_FRAMES = 2
+CLASS_THRESHOLDS = {}
+
+
+def threshold_for(idx):
+    """Confidence threshold for class index idx (per-class or global)."""
+    try:
+        name = str(ACTIONS[idx])
+    except (IndexError, TypeError):
+        return CONFIDENCE_THRESHOLD
+    return float(CLASS_THRESHOLDS.get(name, CONFIDENCE_THRESHOLD))
 
 # ── MediaPipe ──
 MODEL_COMPLEXITY = 2
